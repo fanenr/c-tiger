@@ -39,7 +39,12 @@ main (int argc, char **argv)
           break;
 
         case NUM:
-          printf ("token: %s(%ld)\n", tokname[tok->kind], tok->data.num);
+          printf ("token: %s (%ld)\n", tokname[tok->kind], tok->data.num);
+          break;
+
+        case ID:
+        case STRING:
+          printf ("token: %s (%s)\n", tokname[tok->kind], tok->data.id);
           break;
         }
     }
@@ -57,6 +62,7 @@ token_add (token tok)
           fprintf (stderr, "memory allocate failed\n");
           exit (1);
         }
+      token_cap = cap;
       token_list = new;
     }
   token_list[token_size++] = tok;
@@ -65,7 +71,7 @@ token_add (token tok)
 token
 token_build (int type, const char *text)
 {
-  if (type > STRING)
+  if (type < 0 || type >= ILLEGAL)
     error ("unknown type token: %s\n", text);
 
   token tok;
@@ -75,6 +81,12 @@ token_build (int type, const char *text)
     case NUM:
       tok.data.num = atol (text);
       break;
+
+    case ID:
+      tok.data.id = string (text);
+
+    case STRING:
+      tok.data.string = string (text);
 
     default:
       break;
