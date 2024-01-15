@@ -31,3 +31,9 @@ build_stm (void)
 
   return stm_new_compound (stm1, stm_new_compound (stm2, stm3));
 }
+
+int
+main (void)
+{
+  build_stm ();
+}
