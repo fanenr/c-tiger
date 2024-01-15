@@ -1,3 +1,6 @@
+#ifndef TYPES_H
+#define TYPES_H
+
 struct stm_t;
 struct exp_t;
 struct exp_list_t;
@@ -105,3 +108,5 @@ exp_list_t *exp_list_new_last (exp_t *last);
 #include <stddef.h>
 
 void *checked_malloc (size_t size);
+
+#endif
