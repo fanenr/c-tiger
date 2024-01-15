@@ -20,6 +20,7 @@ enum
   FOR,
   COMMA,
   STRING,
+  ILLEGAL,
 };
 
 #endif
