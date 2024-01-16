@@ -6,3 +6,6 @@ test.o: test.c types.h
 
 impl.o:	impl.c types.h
 	gcc -g -c $<
+
+clean:
+	rm -f *.o test
