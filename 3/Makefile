@@ -13,5 +13,8 @@ tiger.lex.o: tiger.lex.c token.h
 tiger.lex.c: tiger.lex
 	flex -o $@ $<
 
+tiger.lex:
+	touch $@
+
 clean:
 	rm -f *.o tiger.lex.c lexer
