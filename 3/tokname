@@ -9,3 +9,4 @@
 [TIMES] = "TIMES",
 [DIV] = "DIV",
 [COMMA] = "COMMA",
+[SEMI] = "SEMI",

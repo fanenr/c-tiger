@@ -6,9 +6,6 @@
 extern int yylex (void);
 extern int yyparse (void);
 
-extern int yyleng;
-extern const char *yytext;
-
 const char *const tokname[] = {
 #include "tokname"
 };
@@ -120,6 +117,6 @@ yywrap (void)
 void
 yyerror (const char *pos)
 {
-  fprintf (stderr, "error occured\n");
+  fprintf (stderr, "error occured: %s\n", pos);
   exit (1);
 }
