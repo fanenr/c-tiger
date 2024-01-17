@@ -13,18 +13,22 @@ typedef struct token
 
 enum
 {
-  TOK_ST,
-  IF,     /* if */
-  FOR,    /* for */
-  ID,     /* id */
-  NUM,    /* num */
-  STRING, /* ".*" */
-  COMMA,  /* , */
-  TOK_ED,
-
-  OTHER,  /* . */
-  NLINE,  /* \n */
-  WSPACE, /* [ \t\r]+ */
+  ST = 260,
+  IF,
+  FOR,
+  ID,
+  NUM,
+  STRING,
+  EQ,
+  PLUS,
+  MINUS,
+  TIMES,
+  DIV,
+  COMMA,
+  OTHER,
+  NLINE,
+  WSPACE,
+  ED,
 };
 
 #endif
