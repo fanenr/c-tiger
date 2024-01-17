@@ -6,21 +6,25 @@ typedef struct token
   int kind;
   union
   {
-    char *id;
     long num;
-    char *string;
+    char *str;
   } data;
 } token;
 
 enum
 {
-  ID,
-  IF,
-  NUM,
-  FOR,
-  COMMA,
-  STRING,
-  ILLEGAL,
+  TOK_ST,
+  IF,     /* if */
+  FOR,    /* for */
+  ID,     /* id */
+  NUM,    /* num */
+  STRING, /* ".*" */
+  COMMA,  /* , */
+  TOK_ED,
+
+  OTHER,  /* . */
+  NLINE,  /* \n */
+  WSPACE, /* [ \t\r]+ */
 };
 
 #endif
