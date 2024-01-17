@@ -1,4 +1,4 @@
-lexer: driver.o tiger.lex.o util.o
+lexer: driver.o tiger.l.o util.o
 	gcc -g -o $@ $^
 
 driver.o: driver.c token.h util.h
@@ -7,14 +7,14 @@ driver.o: driver.c token.h util.h
 util.o: util.c util.h
 	gcc -g -c $<
 
-tiger.lex.o: tiger.lex.c token.h
+tiger.l.o: tiger.l.c token.h
 	gcc -g -c $<
 
-tiger.lex.c: tiger.lex
+tiger.l.c: tiger.l
 	flex -o $@ $<
 
-tiger.lex:
+tiger.l:
 	touch $@
 
 clean:
-	rm -f *.o tiger.lex.c lexer
+	rm -f *.o tiger.l.c lexer

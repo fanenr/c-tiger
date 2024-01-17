@@ -1,4 +1,6 @@
-*.o
 test
 lexer
-tiger.lex.c
+
+*.o
+*.l.c
+*.y.c
