@@ -1,4 +1,4 @@
 *.o
-1/test
-2/lexer
-lex.yy.c
+test
+lexer
+tiger.lex.c
