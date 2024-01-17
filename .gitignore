@@ -1,6 +1,6 @@
 test
 lexer
-driver
+parser
 
 *.o
 *.l.c

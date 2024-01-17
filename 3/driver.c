@@ -1,3 +1,4 @@
+#include "tiger.y.h"
 #include "token.h"
 #include "util.h"
 #include <stdio.h>
@@ -5,10 +6,6 @@
 
 extern int yylex (void);
 extern int yyparse (void);
-
-const char *const tokname[] = {
-#include "tokname"
-};
 
 /* token list */
 static token *token_list;

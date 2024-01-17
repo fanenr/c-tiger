@@ -4,27 +4,38 @@ extern int yylex (void);
 extern void yyerror(const char *);
 %}
 
-%token ST 259
-%token IF FOR ID NUM STRING
-%token EQ PLUS MINUS TIMES DIV COMMA SEMI
-%token OTHER NLINE WSPACE
-%token ED
-
 %start prog
+%token IF FOR 
+%token ID NUM STRING
+%token EQ PLUS MINUS TIMES DIV
+%token COMMA SEMI COLON
+%token WSPACE NLINE OTHER
+
 %left PLUS MINUS
 %left TIMES DIV
 
-%%
-prog: stms
+%union {
+         long num;
+         char *str;
+         double real;
+       }
 
-stms: stm
+%%
+prog
+    : stms
+
+stms
+    : stm
     | stms SEMI stm
     ;
 
-stm: ID EQ exp
+stm
+    : ID EQ exp
     ;
 
-exp: NUM
+exp
+    : ID
+    | NUM
     | exp PLUS exp
     | exp MINUS exp
     | exp TIMES exp
