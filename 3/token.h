@@ -11,25 +11,4 @@ typedef struct token
   } data;
 } token;
 
-enum
-{
-  ST = 260,
-  IF,
-  FOR,
-  ID,
-  NUM,
-  STRING,
-  EQ,
-  PLUS,
-  MINUS,
-  TIMES,
-  DIV,
-  COMMA,
-  SEMI,
-  OTHER,
-  NLINE,
-  WSPACE,
-  ED,
-};
-
 #endif
