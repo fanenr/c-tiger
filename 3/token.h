@@ -25,6 +25,7 @@ enum
   TIMES,
   DIV,
   COMMA,
+  SEMI,
   OTHER,
   NLINE,
   WSPACE,

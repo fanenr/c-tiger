@@ -1,5 +1,6 @@
 test
 lexer
+driver
 
 *.o
 *.l.c

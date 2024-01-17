@@ -7,6 +7,7 @@
 size_t chpos;
 size_t linepos;
 extern FILE *yyin;
+extern const char *yytext;
 
 void *
 checked_malloc (size_t size)
@@ -49,4 +50,17 @@ error (const char *fmt, ...)
   vfprintf (stderr, fmt, ap);
   va_end (ap);
   exit (1);
+}
+
+void
+nline (void)
+{
+  linepos++;
+  chpos = 1;
+}
+
+void
+other (void)
+{
+  error ("unknown type token %s\n", yytext);
 }

@@ -7,6 +7,9 @@
 extern size_t chpos;
 extern size_t linepos;
 
+extern int yyleng;
+extern const char *yytext;
+
 char *string (const char *src);
 void *checked_malloc (size_t size);
 
