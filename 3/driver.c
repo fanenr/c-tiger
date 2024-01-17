@@ -4,13 +4,13 @@
 #include <stdlib.h>
 
 extern int yylex (void);
+extern int yyparse (void);
 
 extern int yyleng;
 extern const char *yytext;
 
 const char *const tokname[] = {
-  [ID] = "ID",   [IF] = "IF",       [NUM] = "NUM",
-  [FOR] = "FOR", [COMMA] = "COMMA", [STRING] = "STRING",
+#include "tokname"
 };
 
 /* token list */
@@ -31,14 +31,17 @@ main (int argc, char **argv)
 
   reset (argv[1]);
 
+  yyparse ();
+
+  /*
   for (int tok = yylex (); tok; tok = yylex ())
     switch (tok)
       {
-      case NLINE: /* new line */
+      case NLINE:
         linepos++;
         chpos = 1;
         break;
-      case WSPACE: /* white space */
+      case WSPACE:
         chpos += yyleng;
         break;
       default:
@@ -66,12 +69,14 @@ main (int argc, char **argv)
         }
       printf ("\n");
     }
+  */
 }
 
+/*
 void
 token_add (int type)
 {
-  if (type <= TOK_ST || type >= TOK_ED)
+  if (type <= ST || type >= ED)
     error ("unknown type token `%s`\n", yytext);
 
   if (token_size + 1 > token_cap)
@@ -104,9 +109,17 @@ token_add (int type)
   token_list[token_size++] = tok;
   chpos += yyleng;
 }
+*/
 
 int
 yywrap (void)
 {
   return 1;
+}
+
+void
+yyerror (const char *pos)
+{
+  fprintf (stderr, "error occured\n");
+  exit (1);
 }

@@ -3,4 +3,5 @@ lexer
 
 *.o
 *.l.c
+*.y.h
 *.y.c
