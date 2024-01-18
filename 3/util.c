@@ -6,8 +6,6 @@
 
 size_t chpos;
 size_t linepos;
-extern FILE *yyin;
-extern const char *yytext;
 
 void *
 checked_malloc (size_t size)
@@ -50,6 +48,16 @@ error (const char *fmt, ...)
   vfprintf (stderr, fmt, ap);
   va_end (ap);
   exit (1);
+}
+
+/* ********************************** */
+/*             for lexer              */
+/* ********************************** */
+
+void
+adjust (void)
+{
+  chpos += yyleng;
 }
 
 void

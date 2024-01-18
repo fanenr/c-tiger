@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+
 extern int yylex (void);
 extern void yyerror(const char *);
 %}
@@ -22,23 +23,43 @@ extern void yyerror(const char *);
 
 %%
 prog
-    : stms
+    : stms                  {
+                            }
+    ;
 
 stms
-    : stm
-    | stms SEMI stm
+    : stm                   {
+                            }
+
+    | stms SEMI stm         {
+                            }
     ;
 
 stm
-    : ID EQ exp
+    : ID EQ exp             {
+                              printf ("assign ");
+                            }
     ;
 
 exp
-    : ID
-    | NUM
-    | exp PLUS exp
-    | exp MINUS exp
-    | exp TIMES exp
-    | exp DIV exp
+    : ID                    {
+                            }
+
+    | NUM                   {
+                            }
+
+    | exp PLUS exp          {
+                              printf ("plus ");
+                            }
+
+    | exp MINUS exp         {
+                            }
+
+    | exp TIMES exp         {
+                              printf ("times ");
+                            }
+
+    | exp DIV exp           {
+                            }
     ;
 %%

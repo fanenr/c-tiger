@@ -1,30 +1,39 @@
 %{
 #include "tiger.y.h"
+
 extern void nline (void);
 extern void other (void);
+extern void adjust (void);
+
+#define NLN() nline ()
+#define OTR() other ()
+#define ADJ() adjust ()
+#define RET(TOK) return TOK
 %}
 
-id                        [a-zA-Z_][a-zA-Z0-9_]*
-str                       \"[^"\n]*\"
+digit                 [0-9]
+alpha                 [a-zA-Z_]
+str                   \"[^"\n]*\"
+id                    {alpha}[{alpha}{digit}]*
 
 %%
-if                        { return IF;     }
-for                       { return FOR;    }
-                                            
-{id}                      { return ID;     }
-{str}                     { return STRING; }
-[0-9]+                    { return NUM;    }
-                                            
-"="                       { return EQ;     }
-"+"                       { return PLUS;   }
-"-"                       { return MINUS;  }
-"*"                       { return TIMES;  }
-"/"                       { return DIV;    }
-","                       { return COMMA;  }
-":"                       { return COLON;  }
-";"                       { return SEMI;   }
-                                            
-[ \t]+                    {                }
-\n                        { nline ();      }
-.                         { other ();      }
+if                    { ADJ (); RET (IF     ); }
+for                   { ADJ (); RET (FOR    ); }
+                                                
+{id}                  { ADJ (); RET (ID     ); }
+{str}                 { ADJ (); RET (STRING ); }
+{digit}+              { ADJ (); RET (NUM    ); }
+                                                
+"="                   { ADJ (); RET (EQ     ); }
+"+"                   { ADJ (); RET (PLUS   ); }
+"-"                   { ADJ (); RET (MINUS  ); }
+"*"                   { ADJ (); RET (TIMES  ); }
+"/"                   { ADJ (); RET (DIV    ); }
+","                   { ADJ (); RET (COMMA  ); }
+":"                   { ADJ (); RET (COLON  ); }
+";"                   { ADJ (); RET (SEMI   ); }
+                                                
+[ \t]+                { ADJ ();                }
+\n                    { NLN ();                }
+.                     { OTR ();                }
 %%
