@@ -37,6 +37,5 @@ yywrap (void)
 void
 yyerror (const char *pos)
 {
-  fprintf (stderr, "error occured: %s\n", pos);
-  exit (1);
+  error ("%s", pos);
 }
