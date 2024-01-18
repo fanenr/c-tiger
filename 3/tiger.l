@@ -18,8 +18,9 @@ id                    {alpha}[{alpha}{digit}]*
 
 %%
 if                    { ADJ (); RET (IF     ); }
-for                   { ADJ (); RET (FOR    ); }
-                                                
+else                  { ADJ (); RET (ELSE   ); }
+while                 { ADJ (); RET (WHILE  ); }
+                                                    
 {id}                  { ADJ (); RET (ID     ); }
 {str}                 { ADJ (); RET (STRING ); }
 {digit}+              { ADJ (); RET (NUM    ); }
@@ -30,7 +31,6 @@ for                   { ADJ (); RET (FOR    ); }
 "*"                   { ADJ (); RET (TIMES  ); }
 "/"                   { ADJ (); RET (DIV    ); }
 ","                   { ADJ (); RET (COMMA  ); }
-":"                   { ADJ (); RET (COLON  ); }
 ";"                   { ADJ (); RET (SEMI   ); }
                                                 
 [ \t]+                { ADJ ();                }
