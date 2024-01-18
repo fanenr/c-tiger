@@ -23,43 +23,24 @@ extern void yyerror(const char *);
 
 %%
 prog
-    : stms                  {
-                            }
+    : stms                  { }
     ;
 
 stms
-    : stm                   {
-                            }
-
-    | stms SEMI stm         {
-                            }
+    : stm                   { }
+    | stms SEMI stm         { }
     ;
 
 stm
-    : ID EQ exp             {
-                              printf ("assign ");
-                            }
+    : ID EQ exp             { }
     ;
 
 exp
-    : ID                    {
-                            }
-
-    | NUM                   {
-                            }
-
-    | exp PLUS exp          {
-                              printf ("plus ");
-                            }
-
-    | exp MINUS exp         {
-                            }
-
-    | exp TIMES exp         {
-                              printf ("times ");
-                            }
-
-    | exp DIV exp           {
-                            }
+    : ID                    { }
+    | NUM                   { }
+    | exp PLUS exp          { }
+    | exp MINUS exp         { }
+    | exp TIMES exp         { }
+    | exp DIV exp           { }
     ;
 %%

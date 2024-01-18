@@ -8,7 +8,7 @@ tiger.y.o: tiger.y.c
 	gcc -g -c $<
 
 tiger.y.c tiger.y.h: tiger.y
-	bison -d --defines=$<.h -o $<.c $<
+	bison -v --header=$<.h -o $<.c $<
 
 tiger.l.o: tiger.l.c tiger.y.h
 	gcc -g -c $<

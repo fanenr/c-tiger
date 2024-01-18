@@ -6,3 +6,4 @@ parser
 *.l.c
 *.y.h
 *.y.c
+*.y.output
