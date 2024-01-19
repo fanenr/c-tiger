@@ -58,8 +58,8 @@ stm_while
     ;
 
 stm_if
-    : IF exp_paren stm                   { }
-    | IF exp_paren bloc                  { }
+    : IF exp_paren stm                   { } %prec IF
+    | IF exp_paren bloc                  { } %prec IF
     | IF exp_paren stm ELSE stm          { }
     | IF exp_paren stm ELSE bloc         { }
     | IF exp_paren bloc ELSE stm         { }
