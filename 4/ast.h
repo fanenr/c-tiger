@@ -5,17 +5,10 @@ enum
 {
   AST_STM_ST,
   AST_STM_ASSIGN,
-  AST_STM_WHILE_ST,
-  AST_STM_WHILE1,
-  AST_STM_WHILE2,
-  AST_STM_WHILE_ED,
+  AST_STM_WHILE,
   AST_STM_IF_ST,
   AST_STM_IF1,
   AST_STM_IF2,
-  AST_STM_IF3,
-  AST_STM_IF4,
-  AST_STM_IF5,
-  AST_STM_IF6,
   AST_STM_IF_ED,
   AST_STM_ED,
   AST_EXP_ST,
@@ -57,61 +50,43 @@ typedef struct ast_exp_binary ast_exp_binary;
 
 struct ast_stms
 {
-  ast_stm *stm;
-  ast_stms *stms;
+  unsigned cap;
+  unsigned size;
+  ast_stm **stm;
 };
 
 struct ast_stm
 {
-  int kind;
-  union
-  {
-    ast_stm_assign *stm_assign;
-    ast_stm_while *stm_while;
-    ast_stm_if *stm_if;
-  };
-};
+  unsigned kind;
+  unsigned lnpos;
+  unsigned chpos;
+} __attribute__ ((aligned (sizeof (void *))));
 
 struct ast_stm_assign
 {
-  ast_exp *id;
-  ast_exp *exp;
+  ast_exp *exp1;
+  ast_exp *exp2;
 };
 
 struct ast_stm_while
 {
   ast_exp *exp;
-  union
-  {
-    ast_stm *stm;
-    ast_stms *stms;
-  };
+  ast_stms *stms;
 };
 
 struct ast_stm_if
 {
   ast_exp *exp;
-  union
-  {
-    ast_stm *then_stm;
-    ast_stms *then_stms;
-  };
-  union
-  {
-    ast_stm *else_stm;
-    ast_stms *else_stms;
-  };
+  ast_stms *then_stms;
+  ast_stms *else_stms;
 };
 
 struct ast_exp
 {
-  int kind;
-  union
-  {
-    ast_exp_elem *exp_elem;
-    ast_exp_binary *exp_binary;
-  };
-};
+  unsigned kind;
+  unsigned lnpos;
+  unsigned chpos;
+} __attribute__ ((aligned (sizeof (void *))));
 
 struct ast_exp_elem
 {
