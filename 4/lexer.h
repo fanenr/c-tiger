@@ -1,9 +1,6 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-extern unsigned chpos;
-extern unsigned lnpos;
-
 extern void nline (void);
 extern void other (void);
 extern void adjust (void);

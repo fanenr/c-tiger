@@ -37,6 +37,12 @@ enum
   AST_EXP_ED,
 };
 
+typedef struct ast_pos
+{
+  unsigned ln;
+  unsigned ch;
+} ast_pos;
+
 typedef struct ast_stms ast_stms;
 
 typedef struct ast_stm ast_stm;
@@ -58,8 +64,7 @@ struct ast_stms
 struct ast_stm
 {
   unsigned kind;
-  unsigned lnpos;
-  unsigned chpos;
+  ast_pos pos;
 } __attribute__ ((aligned (sizeof (void *))));
 
 struct ast_stm_assign
@@ -84,8 +89,7 @@ struct ast_stm_if
 struct ast_exp
 {
   unsigned kind;
-  unsigned lnpos;
-  unsigned chpos;
+  ast_pos pos;
 } __attribute__ ((aligned (sizeof (void *))));
 
 struct ast_exp_elem
