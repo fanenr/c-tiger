@@ -6,16 +6,16 @@
 #include <string.h>
 
 /* util */
-static void *checked_malloc (size_t size);
-static char *string (const char *src);
+char *string (const char *src);
+void *checked_malloc (size_t size);
 
 /* extern */
 extern int yyleng;
 extern const char *yytext;
 
 /* export */
-size_t chpos;
-size_t linepos;
+unsigned chpos;
+unsigned lnpos;
 
 void
 adjust (void)
@@ -26,7 +26,7 @@ adjust (void)
 void
 nline (void)
 {
-  linepos++;
+  lnpos++;
   chpos = 1;
 }
 
@@ -65,7 +65,7 @@ error (const char *fmt, ...)
 {
   va_list ap;
   va_start (ap, fmt);
-  fprintf (stderr, "error occured at %ld:%ld: ", linepos, chpos);
+  fprintf (stderr, "error occured at %u:%u: ", lnpos, chpos);
   vfprintf (stderr, fmt, ap);
   va_end (ap);
   exit (1);
@@ -75,7 +75,7 @@ error (const char *fmt, ...)
 /*                     util                         */
 /* ************************************************ */
 
-static void *
+void *
 checked_malloc (size_t size)
 {
   void *ret = malloc (size);
@@ -87,7 +87,7 @@ checked_malloc (size_t size)
   return ret;
 }
 
-static char *
+char *
 string (const char *src)
 {
   size_t cap = strlen (src) + 1;

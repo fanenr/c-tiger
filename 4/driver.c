@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "parser.h"
 #include "tiger.y.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +27,13 @@ main (int argc, char **argv)
     }
 
   yyparse ();
+
+  for (unsigned i = 0; i < stms.size; i++)
+    {
+      ast_stm *stm = stms.list[i];
+      printf ("stm `%u`, kind `%u`, at `%u:%u`\n", i + 1, stm->kind,
+              stm->lnpos, stm->chpos);
+    }
 }
 
 int

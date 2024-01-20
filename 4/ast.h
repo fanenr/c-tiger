@@ -52,7 +52,7 @@ struct ast_stms
 {
   unsigned cap;
   unsigned size;
-  ast_stm **stm;
+  ast_stm **list;
 };
 
 struct ast_stm
