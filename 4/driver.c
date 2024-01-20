@@ -1,5 +1,5 @@
+#include "ast.h"
 #include "lexer.h"
-#include "parser.h"
 #include "tiger.y.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +8,7 @@ extern FILE *yyin;
 extern int yylex (void);
 extern int yyparse (void);
 
-static void token_add (int type);
+ast_stms stms;
 
 int
 main (int argc, char **argv)
