@@ -1,6 +1,7 @@
 %{
 #include "parser.h"
 
+extern ast_stms stms;
 extern int yylex (void);
 extern void yyerror(const char *);
 %}
@@ -44,9 +45,9 @@ prog
 
 stms
     : stm
-      { stms_add ($1); }
+      { ast_stms_add (&stms, $1); }
     | stms stm
-      { stms_add ($2); }
+      { ast_stms_add (&stms, $2); }
     ;
 
 stm
@@ -60,19 +61,19 @@ stm
 
 stm_assign
     : exp EQ exp
-      { $$ = ast_stm_assign_new ($1, $3, $2);  }
+      { $$ = AST_STM_NEW (ASSIGN, $2, $1, $3);  }
     ;
 
 stm_while
     : WHILE exp_paren bloc
-      { $$ = ast_stm_while_new ($2, $3, $1);   }
+      { $$ = AST_STM_NEW (WHILE, $1, $2, $3);   }
     ;
 
 stm_if
     : IF exp_paren bloc
-      { $$ = ast_stm_if1_new ($2, $3, $1);     }
+      { $$ = AST_STM_NEW (IF1, $1, $2, $3);     }
     | IF exp_paren bloc ELSE bloc
-      { $$ = ast_stm_if2_new ($2, $3, $5, $1); }
+      { $$ = AST_STM_NEW (IF2, $1, $2, $3, $5); }
     ;
 
 bloc
@@ -93,13 +94,13 @@ exp
 
 exp_elem
     : ID
-      { $$ = ast_exp_elem_id_new ($1, pos);     }
+      { $$ = AST_EXP_NEW (ELEM_ID, pos, $1);     }
     | NUM
-      { $$ = ast_exp_elem_num_new ($1, pos);    }
+      { $$ = AST_EXP_NEW (ELEM_NUM, pos, $1);    }
     | REAL
-      { $$ = ast_exp_elem_real_new ($1, pos);   }
+      { $$ = AST_EXP_NEW (ELEM_REAL, pos, $1);   }
     | STRING
-      { $$ = ast_exp_elem_string_new ($1, pos); }
+      { $$ = AST_EXP_NEW (ELEM_STRING, pos, $1); }
     ;
 
 exp_paren
@@ -109,7 +110,7 @@ exp_paren
 
 exp_unary
     : MINUS exp %prec UMINUS
-      { $$ = ast_exp_unary_uminus_new ($2, $1); }
+      { $$ = AST_EXP_NEW (UNARY_UMINUS, $1, $2); }
     ;
 
 exp_binary
@@ -121,27 +122,27 @@ exp_binary
 
 exp_binary_math
     : exp PLUS exp
-      { $$ = ast_exp_binary_math_plus_new ($1, $3, $2);  }
+      { $$ = AST_EXP_NEW (BINARY_MATH_PLUS, $2, $1, $3);  }
     | exp MINUS exp
-      { $$ = ast_exp_binary_math_minus_new ($1, $3, $2); }
+      { $$ = AST_EXP_NEW (BINARY_MATH_MINUS, $2, $1, $3); }
     | exp TIMES exp
-      { $$ = ast_exp_binary_math_times_new ($1, $3, $2); }
+      { $$ = AST_EXP_NEW (BINARY_MATH_TIMES, $2, $1, $3); }
     | exp DIV exp
-      { $$ = ast_exp_binary_math_div_new ($1, $3, $2);   }
+      { $$ = AST_EXP_NEW (BINARY_MATH_DIV, $2, $1, $3);   }
     ;
 
 exp_binary_logic
     : exp LT exp
-      { $$ = ast_exp_binary_logic_lt_new ($1, $3, $2);   }
+      { $$ = AST_EXP_NEW (BINARY_LOGIC_LT, $2, $1, $3);   }
     | exp GT exp
-      { $$ = ast_exp_binary_logic_gt_new ($1, $3, $2);   }
+      { $$ = AST_EXP_NEW (BINARY_LOGIC_GT, $2, $1, $3);   }
     | exp LEQ exp
-      { $$ = ast_exp_binary_logic_leq_new ($1, $3, $2);  }
+      { $$ = AST_EXP_NEW (BINARY_LOGIC_LEQ, $2, $1, $3);  }
     | exp NEQ exp
-      { $$ = ast_exp_binary_logic_neq_new ($1, $3, $2);  }
+      { $$ = AST_EXP_NEW (BINARY_LOGIC_NEQ, $2, $1, $3);  }
     | exp LTEQ exp
-      { $$ = ast_exp_binary_logic_lteq_new ($1, $3, $2); }
+      { $$ = AST_EXP_NEW (BINARY_LOGIC_LTEQ, $2, $1, $3); }
     | exp GTEQ exp
-      { $$ = ast_exp_binary_logic_gteq_new ($1, $3, $2); }
+      { $$ = AST_EXP_NEW (BINARY_LOGIC_GTEQ, $2, $1, $3); }
     ;
 %%
