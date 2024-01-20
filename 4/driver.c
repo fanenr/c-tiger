@@ -32,7 +32,7 @@ main (int argc, char **argv)
     {
       ast_stm *stm = stms.list[i];
       printf ("stm `%u`, kind `%u`, at `%u:%u`\n", i + 1, stm->kind,
-              stm->lnpos, stm->chpos);
+              stm->pos.ln, stm->pos.ch);
     }
 }
 

@@ -9,12 +9,14 @@ extern void yyerror(const char *);
          long num;
          void *ptr;
          double real;
+         ast_pos pos;
        }
 
 %token <num> NUM
 %token <real> REAL
 %token <ptr> ID STRING
-%token IF ELSE WHILE
+%token <pos>
+       IF ELSE WHILE
        EQ PLUS MINUS TIMES DIV
        LT GT LEQ NEQ LTEQ GTEQ
        LPAREN RPAREN LBRACE RBRACE
@@ -42,35 +44,35 @@ prog
 
 stms
     : stm
-      { }
+      { stms_add ($1); }
     | stms stm
-      { }
+      { stms_add ($2); }
     ;
 
 stm
     : stm_assign
-      { stms_add ($1);                     }
+      { $$ = $1; }
     | stm_while
-      { stms_add ($1);                     }
+      { $$ = $1; }
     | stm_if
-      { stms_add ($1);                     }
+      { $$ = $1; }
     ;
 
 stm_assign
     : exp EQ exp
-      { $$ = ast_stm_assign_new ($1, $3);  }
+      { $$ = ast_stm_assign_new ($1, $3, $2);  }
     ;
 
 stm_while
     : WHILE exp_paren bloc
-      { $$ = ast_stm_while_new ($2, $3);   }
+      { $$ = ast_stm_while_new ($2, $3, $1);   }
     ;
 
 stm_if
     : IF exp_paren bloc
-      { $$ = ast_stm_if1_new ($2, $3);     }
+      { $$ = ast_stm_if1_new ($2, $3, $1);     }
     | IF exp_paren bloc ELSE bloc
-      { $$ = ast_stm_if2_new ($2, $3, $5); }
+      { $$ = ast_stm_if2_new ($2, $3, $5, $1); }
     ;
 
 bloc
@@ -91,13 +93,13 @@ exp
 
 exp_elem
     : ID
-      { $$ = ast_exp_elem_id_new ($1);     }
+      { $$ = ast_exp_elem_id_new ($1, pos);     }
     | NUM
-      { $$ = ast_exp_elem_num_new ($1);    }
+      { $$ = ast_exp_elem_num_new ($1, pos);    }
     | REAL
-      { $$ = ast_exp_elem_real_new ($1);   }
+      { $$ = ast_exp_elem_real_new ($1, pos);   }
     | STRING
-      { $$ = ast_exp_elem_string_new ($1); }
+      { $$ = ast_exp_elem_string_new ($1, pos); }
     ;
 
 exp_paren
@@ -107,7 +109,7 @@ exp_paren
 
 exp_unary
     : MINUS exp %prec UMINUS
-      { $$ = ast_exp_unary_uminus_new ($2);          }
+      { $$ = ast_exp_unary_uminus_new ($2, $1); }
     ;
 
 exp_binary
@@ -119,27 +121,27 @@ exp_binary
 
 exp_binary_math
     : exp PLUS exp
-      { $$ = ast_exp_binary_math_plus_new ($1, $3);  }
+      { $$ = ast_exp_binary_math_plus_new ($1, $3, $2);  }
     | exp MINUS exp
-      { $$ = ast_exp_binary_math_minus_new ($1, $3); }
+      { $$ = ast_exp_binary_math_minus_new ($1, $3, $2); }
     | exp TIMES exp
-      { $$ = ast_exp_binary_math_times_new ($1, $3); }
+      { $$ = ast_exp_binary_math_times_new ($1, $3, $2); }
     | exp DIV exp
-      { $$ = ast_exp_binary_math_div_new ($1, $3);   }
+      { $$ = ast_exp_binary_math_div_new ($1, $3, $2);   }
     ;
 
 exp_binary_logic
     : exp LT exp
-      { $$ = ast_exp_binary_logic_lt_new ($1, $3);   }
+      { $$ = ast_exp_binary_logic_lt_new ($1, $3, $2);   }
     | exp GT exp
-      { $$ = ast_exp_binary_logic_gt_new ($1, $3);   }
+      { $$ = ast_exp_binary_logic_gt_new ($1, $3, $2);   }
     | exp LEQ exp
-      { $$ = ast_exp_binary_logic_leq_new ($1, $3);  }
+      { $$ = ast_exp_binary_logic_leq_new ($1, $3, $2);  }
     | exp NEQ exp
-      { $$ = ast_exp_binary_logic_neq_new ($1, $3);  }
+      { $$ = ast_exp_binary_logic_neq_new ($1, $3, $2);  }
     | exp LTEQ exp
-      { $$ = ast_exp_binary_logic_lteq_new ($1, $3); }
+      { $$ = ast_exp_binary_logic_lteq_new ($1, $3, $2); }
     | exp GTEQ exp
-      { $$ = ast_exp_binary_logic_gteq_new ($1, $3); }
+      { $$ = ast_exp_binary_logic_gteq_new ($1, $3, $2); }
     ;
 %%

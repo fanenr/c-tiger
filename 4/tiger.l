@@ -1,4 +1,5 @@
 %{
+#include "ast.h"
 #include "lexer.h"
 #include "tiger.y.h"
 %}
