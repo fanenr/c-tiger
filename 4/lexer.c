@@ -15,7 +15,7 @@ extern int yyleng;
 extern const char *yytext;
 
 /* global */
-ast_pos pos = { .ln = 1, .ch = 1 };
+ast_pos pos = { .ln = 1, .ch = 0 };
 
 void
 adjust (void)
@@ -27,7 +27,7 @@ void
 nline (void)
 {
   pos.ln++;
-  pos.ch = 1;
+  pos.ch = 0;
 }
 
 void
