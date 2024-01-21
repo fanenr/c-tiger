@@ -122,27 +122,27 @@ exp_binary
 
 exp_binary_math
     : exp PLUS exp
-      { $$ = AST_EXP_NEW (BINARY_MATH_PLUS, $2, $1, $3);  }
+      { $$ = AST_EXP_NEW (BINARY_PLUS, $2, $1, $3);  }
     | exp MINUS exp
-      { $$ = AST_EXP_NEW (BINARY_MATH_MINUS, $2, $1, $3); }
+      { $$ = AST_EXP_NEW (BINARY_MINUS, $2, $1, $3); }
     | exp TIMES exp
-      { $$ = AST_EXP_NEW (BINARY_MATH_TIMES, $2, $1, $3); }
+      { $$ = AST_EXP_NEW (BINARY_TIMES, $2, $1, $3); }
     | exp DIV exp
-      { $$ = AST_EXP_NEW (BINARY_MATH_DIV, $2, $1, $3);   }
+      { $$ = AST_EXP_NEW (BINARY_DIV, $2, $1, $3);   }
     ;
 
 exp_binary_logic
     : exp LT exp
-      { $$ = AST_EXP_NEW (BINARY_LOGIC_LT, $2, $1, $3);   }
+      { $$ = AST_EXP_NEW (BINARY_LT, $2, $1, $3);    }
     | exp GT exp
-      { $$ = AST_EXP_NEW (BINARY_LOGIC_GT, $2, $1, $3);   }
+      { $$ = AST_EXP_NEW (BINARY_GT, $2, $1, $3);    }
     | exp LEQ exp
-      { $$ = AST_EXP_NEW (BINARY_LOGIC_LEQ, $2, $1, $3);  }
+      { $$ = AST_EXP_NEW (BINARY_LEQ, $2, $1, $3);   }
     | exp NEQ exp
-      { $$ = AST_EXP_NEW (BINARY_LOGIC_NEQ, $2, $1, $3);  }
+      { $$ = AST_EXP_NEW (BINARY_NEQ, $2, $1, $3);   }
     | exp LTEQ exp
-      { $$ = AST_EXP_NEW (BINARY_LOGIC_LTEQ, $2, $1, $3); }
+      { $$ = AST_EXP_NEW (BINARY_LTEQ, $2, $1, $3);  }
     | exp GTEQ exp
-      { $$ = AST_EXP_NEW (BINARY_LOGIC_GTEQ, $2, $1, $3); }
+      { $$ = AST_EXP_NEW (BINARY_GTEQ, $2, $1, $3);  }
     ;
 %%

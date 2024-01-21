@@ -110,7 +110,7 @@ ast_exp_new (int type, ast_pos pos, ...)
       {
         ast_exp *exp2 = va_arg (ap, ast_exp *);
         ast_exp *exp1 = AST_EXP_NEW (ELEM_NUM, pos, 0);
-        ret = AST_EXP_NEW (BINARY_MATH_MINUS, pos, exp1, exp2);
+        ret = AST_EXP_NEW (BINARY_MINUS, pos, exp1, exp2);
         break;
       }
     case AST_EXP_BINARY_MATH_ST + 1 ... AST_EXP_BINARY_MATH_ED - 1:
