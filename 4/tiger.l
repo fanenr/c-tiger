@@ -36,6 +36,7 @@ while                 { ADJ (); RET (WHILE  ); }
 ">="                  { ADJ (); RET (GTEQ   ); }
                                                 
 [ \t]+                { ADJ ();                }
+#.*                   { ADJ ();                }
 \n                    { NLN ();                }
 .                     { OTR ();                }
 %%
