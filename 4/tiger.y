@@ -17,11 +17,10 @@ extern void yyerror(const char *);
 %token <num>  NUM
 %token <ptr>  ID STR
 %token <pos>
-       IF ELSE TYPE WHILE
-       EQ PLUS MINUS TIMES DIV
-       LT GT LEQ NEQ LTEQ GTEQ
-       LPAREN RPAREN LBRACE RBRACE
-       COMMA SEMI
+       IF ELSE TYPE WHILE VAR FUNC
+       EQ PLUS MINUS TIMES DIV LT GT LEQ NEQ LTEQ GTEQ
+       LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE
+       COMMA SEMI COLON
 
 %nonassoc IF
 %nonassoc ELSE
@@ -34,7 +33,7 @@ extern void yyerror(const char *);
 
 %start prog
 %type <ptr>
-      bloc_elem
+      bloc_elem type
       def def_var def_type def_func
       stm stm_assign stm_while stm_if
       exp exp_elem exp_paren exp_unary exp_binary
@@ -62,6 +61,17 @@ bloc_elem
       { $$ = $1; }
     ;
 
+type
+    : ID
+      { }
+    | type ID
+      { }
+    | LBRACK RBRACK type
+      { }
+    | TIMES type
+      { }
+    ;
+
 def
     : def_var
       { $$ = $1; }
@@ -72,32 +82,32 @@ def
     ;
 
 def_var
-    : ID ID SEMI
+    : VAR ID COLON type SEMI
       { $$ = AST_DEF_NEW (VAR, $3, $1, $2, 0);  }
-    | ID ID EQ exp SEMI
+    | VAR ID COLON type EQ exp SEMI
       { $$ = AST_DEF_NEW (VAR, $5, $1, $2, $4); }
     ;
 
 def_type
-    : TYPE ID EQ ID SEMI
+    : TYPE ID EQ type SEMI
       { $$ = AST_DEF_NEW (TYPE, $1, $2, $4);    }
     ;
 
 def_func
-    : ID ID LPAREN RPAREN LBRACE RBRACE
+    : FUNC ID LPAREN RPAREN type LBRACE RBRACE
       { $$ = AST_DEF_NEW (FUNC, $3, $1, $2, 0, 0); }
-    | ID ID LPAREN RPAREN LBRACE bloc RBRACE
+    | FUNC ID LPAREN RPAREN type LBRACE bloc RBRACE
       { $$ = AST_DEF_NEW (FUNC, $3, $1, $2, 0, 1); }
-    | ID ID LPAREN func_parm RPAREN LBRACE RBRACE
+    | FUNC ID LPAREN parm RPAREN type LBRACE RBRACE
       { $$ = AST_DEF_NEW (FUNC, $3, $1, $2, 1, 0); }
-    | ID ID LPAREN func_parm RPAREN LBRACE bloc RBRACE
+    | FUNC ID LPAREN parm RPAREN type LBRACE bloc RBRACE
       { $$ = AST_DEF_NEW (FUNC, $3, $1, $2, 1, 1); }
     ;
 
-func_parm
-    : ID ID
+parm
+    : ID COLON type
       { ast_func_parm_push (pos, $1); }
-    | func_parm COMMA ID ID
+    | parm COMMA ID COLON type
       { ast_func_parm_push (pos, $3); }
     ;
 
@@ -116,14 +126,14 @@ stm_assign
     ;
 
 stm_while
-    : WHILE exp_paren LBRACE bloc RBRACE
+    : WHILE LPAREN exp RPAREN LBRACE bloc RBRACE
       { $$ = AST_STM_NEW (WHILE, $1, $2, 1);    }
     ;
 
 stm_if
-    : IF exp_paren LBRACE bloc RBRACE
+    : IF LPAREN exp RPAREN LBRACE bloc RBRACE
       { $$ = AST_STM_NEW (IF1, $1, $2, 1, 0);   }
-    | IF exp_paren LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE
+    | IF LPAREN exp RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE
       { $$ = AST_STM_NEW (IF2, $1, $2, 1, 1);   }
     ;
 

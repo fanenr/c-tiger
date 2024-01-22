@@ -4,15 +4,32 @@
 enum
 {
   AST_TYPE_ST,
-  AST_TYPE_INT,
+  AST_TYPE_ELEM_ST,
+  AST_TYPE_INT8,
+  AST_TYPE_INT16,
+  AST_TYPE_INT32,
+  AST_TYPE_INT64,
+  AST_TYPE_UINT8,
+  AST_TYPE_UINT16,
+  AST_TYPE_UINT32,
+  AST_TYPE_UINT64,
   AST_TYPE_FLOAT,
-  AST_TYPE_STRING,
+  AST_TYPE_DOUBLE,
+  AST_TYPE_ELEM_ED,
+  AST_TYPE_COMP_ST,
+  AST_TYPE_ARRAY,
+  AST_TYPE_UNION,
+  AST_TYPE_STRUCT,
+  AST_TYPE_POINTER,
+  AST_TYPE_COMP_ED,
   AST_TYPE_ED,
+
   AST_DEF_ST,
   AST_DEF_VAR,
   AST_DEF_TYPE,
   AST_DEF_FUNC,
   AST_DEF_ED,
+
   AST_STM_ST,
   AST_STM_ASSIGN,
   AST_STM_WHILE,
@@ -21,6 +38,7 @@ enum
   AST_STM_IF2,
   AST_STM_IF_ED,
   AST_STM_ED,
+
   AST_EXP_ST,
   AST_EXP_ELEM_ST,
   AST_EXP_ELEM_ID,
@@ -56,7 +74,11 @@ typedef struct ast_pos
   unsigned ch;
 } ast_pos;
 
-typedef struct ast_env ast_env;
+typedef struct ast_types ast_types;
+typedef struct ast_type ast_type;
+typedef struct ast_type_array ast_type_array;
+typedef struct ast_type_union ast_type_union;
+typedef struct ast_type_struct ast_type_struct;
 
 typedef struct ast_defs ast_defs;
 typedef struct ast_def ast_def;
@@ -73,6 +95,12 @@ typedef struct ast_stm_if ast_stm_if;
 typedef struct ast_exp ast_exp;
 typedef struct ast_exp_elem ast_exp_elem;
 typedef struct ast_exp_binary ast_exp_binary;
+
+typedef struct ast_env ast_env;
+
+/* ********************************************** */
+/*                    ast def                     */
+/* ********************************************** */
 
 struct ast_defs
 {
@@ -96,7 +124,12 @@ struct ast_def_var
 
 struct ast_def_type
 {
-  ast_def *origin;
+  unsigned comp;
+  union
+  {
+    ast_def *origin;
+    ast_def **list;
+  };
 };
 
 struct ast_def_func
@@ -105,6 +138,10 @@ struct ast_def_func
   ast_def *type;
   ast_defs *parm;
 };
+
+/* ********************************************** */
+/*                    ast stm                     */
+/* ********************************************** */
 
 struct ast_stms
 {
@@ -138,6 +175,10 @@ struct ast_stm_if
   ast_env *else_env;
 };
 
+/* ********************************************** */
+/*                    ast exp                     */
+/* ********************************************** */
+
 struct ast_exp
 {
   unsigned kind;
@@ -160,6 +201,10 @@ struct ast_exp_binary
   ast_exp *exp1;
   ast_exp *exp2;
 };
+
+/* ********************************************** */
+/*                    ast env                     */
+/* ********************************************** */
 
 struct ast_env
 {

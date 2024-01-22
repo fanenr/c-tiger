@@ -11,10 +11,12 @@ num                   [0-9]+
 
 %%
 if                    { ADJ (); RET (IF     ); }
+var                   { ADJ (); RET (VAR    ); }
+func                  { ADJ (); RET (FUNC   ); }
 else                  { ADJ (); RET (ELSE   ); }
 type                  { ADJ (); RET (TYPE   ); }
 while                 { ADJ (); RET (WHILE  ); }
-                                                    
+
 {id}                  { ADJ (); RET (ID     ); }
 {num}                 { ADJ (); RET (NUM    ); }
 {str}                 { ADJ (); RET (STR    ); }
@@ -25,14 +27,15 @@ while                 { ADJ (); RET (WHILE  ); }
 "-"                   { ADJ (); RET (MINUS  ); }
 "*"                   { ADJ (); RET (TIMES  ); }
 "/"                   { ADJ (); RET (DIV    ); }
-
+                                                
 "("                   { ADJ (); RET (LPAREN ); }
 ")"                   { ADJ (); RET (RPAREN ); }
 "{"                   { ADJ (); RET (LBRACE ); }
 "}"                   { ADJ (); RET (RBRACE ); }
 
-";"                   { ADJ (); RET (SEMI   ); }
 ","                   { ADJ (); RET (COMMA  ); }
+";"                   { ADJ (); RET (SEMI   ); }
+":"                   { ADJ (); RET (COLON  ); }
 
 "=="                  { ADJ (); RET (LEQ    ); }
 "!="                  { ADJ (); RET (NEQ    ); }
