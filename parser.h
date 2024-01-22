@@ -6,8 +6,8 @@
 /* from lexer */
 extern ast_pos pos;
 
-/* from parser */
-extern ast_env *glob_env;
+/* init global env */
+void ast_env_init (void);
 
 void ast_type_push (int cond, void *ptr);
 ast_type *ast_type_clear (void);
@@ -16,6 +16,10 @@ ast_type *ast_type_clear (void);
 void ast_parm_push (int cond, void *ptr);
 ast_parm *ast_parm_clear (void);
 #define GPARM ast_parm_clear ()
+
+void ast_env_push (int cond, void *ptr);
+void ast_env_clear (void);
+#define GENV ast_env_clear ()
 
 ast_def *ast_def_new (int type, ast_pos pos, ...);
 ast_stm *ast_stm_new (int type, ast_pos pos, ...);
@@ -37,22 +41,5 @@ ast_exp *ast_exp_new (int type, ast_pos pos, ...);
 #define AST_EXP_SIZE(TYPE) (sizeof (ast_exp) + sizeof (ast_exp_##TYPE))
 
 ast_def *ast_def_seek (ast_pos pos, char *name);
-
-void ast_env_new (void);
-void ast_env_init (void);
-void ast_env_add (void *ptr);
-
-#define AST_BLOC_NEW(PTR)                                                     \
-  ast_env_new ();                                                             \
-  ast_env_add (PTR);                                                          \
-  switch (*(int *)PTR)                                                        \
-    {                                                                         \
-    case AST_DEF_ST ... AST_DEF_ED:                                           \
-      glob_env->outer->defs.size--;                                           \
-      break;                                                                  \
-    case AST_STM_ST ... AST_STM_ED:                                           \
-      glob_env->outer->stms.size--;                                           \
-      break;                                                                  \
-    }
 
 #endif

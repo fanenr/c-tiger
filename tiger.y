@@ -48,9 +48,9 @@ prog
 
 bloc
     : bloc_elem
-      { AST_BLOC_NEW ($1); }
+      { ast_env_push (1, $1); }
     | bloc bloc_elem
-      { }
+      { ast_env_push (2, $2); }
     ;
 
 bloc_elem
@@ -92,13 +92,13 @@ def_type
 
 def_func
     : FUNC ID LPAREN RPAREN type LBRACE RBRACE
-      { $$ = AST_DEF_NEW (FUNC, $1, $2, 0, GTYPE, 0);      }
+      { $$ = AST_DEF_NEW (FUNC, $1, $2, 0, GTYPE, 0);        }
     | FUNC ID LPAREN RPAREN type LBRACE bloc RBRACE
-      { $$ = AST_DEF_NEW (FUNC, $1, $2, 0, GTYPE, ENV);    }
+      { $$ = AST_DEF_NEW (FUNC, $1, $2, 0, GTYPE, GENV);     }
     | FUNC ID LPAREN parm RPAREN type LBRACE RBRACE
-      { $$ = AST_DEF_NEW (FUNC, $1, $2, PARM, GTYPE, 0);   }
+      { $$ = AST_DEF_NEW (FUNC, $1, $2, GPARM, GTYPE, 0);    }
     | FUNC ID LPAREN parm RPAREN type LBRACE bloc RBRACE
-      { $$ = AST_DEF_NEW (FUNC, $1, $2, PARM, GTYPE, ENV); }
+      { $$ = AST_DEF_NEW (FUNC, $1, $2, GPARM, GTYPE, GENV); }
     ;
 
 parm
