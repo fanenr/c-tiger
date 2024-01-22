@@ -9,10 +9,16 @@
 extern char *string (const char *str);
 extern void *checked_malloc (size_t size);
 
-ast_env *env;
-ast_defs func_parm;
+/* global */
+ast_env *glob_env;
 
-static void init_types (void);
+/* private */
+static ast_type *m_type;
+static struct
+{
+  unsigned num;
+  ast_type **list;
+} m_parm;
 
 ast_def *
 ast_def_new (int type, ast_pos pos, ...)
@@ -35,13 +41,13 @@ ast_def_new (int type, ast_pos pos, ...)
         ast_def_var *get = AST_DEF_GET (var, ret);
         /* check and set type */
         char *type = va_arg (ap, char *);
-        ast_def *defined = ast_id_seek (type, pos);
+        ast_def *defined = ast_def_seek (pos, type);
         if (defined == NULL)
           error ("use undefined type %s\n", type);
         get->type = defined;
         /* check and set id */
         char *id = va_arg (ap, char *);
-        defined = ast_id_seek (id, pos);
+        defined = ast_def_seek (pos, id);
         if (defined != NULL)
           error ("identifier %s has been defined here %u:%u\n",
                  defined->pos.ln, defined->pos.ch);
@@ -56,14 +62,14 @@ ast_def_new (int type, ast_pos pos, ...)
         ast_def_type *get = AST_DEF_GET (type, ret);
         /* check and set id */
         char *id = va_arg (ap, char *);
-        ast_def *defined = ast_id_seek (id, pos);
+        ast_def *defined = ast_def_seek (pos, id);
         if (defined != NULL)
           error ("identifier %s has been defined here %u:%u\n",
                  defined->pos.ln, defined->pos.ch);
         ret->id = id;
         /* check and set origin */
         char *type = va_arg (ap, char *);
-        defined = ast_id_seek (type, pos);
+        defined = ast_def_seek (pos, type);
         if (defined == NULL)
           error ("the original type %s is undefined\n");
         get->origin = defined;
@@ -75,24 +81,24 @@ ast_def_new (int type, ast_pos pos, ...)
         ast_def_func *get = AST_DEF_GET (func, ret);
         /* check and set return type */
         char *type = va_arg (ap, char *);
-        ast_def *defined = ast_id_seek (type, pos);
+        ast_def *defined = ast_def_seek (pos, type);
         if (defined == NULL)
           error ("use undefined type %s\n", type);
         get->type = defined;
         /* check and set id */
         char *id = va_arg (ap, char *);
-        defined = ast_id_seek (id, pos);
+        defined = ast_def_seek (pos, id);
         if (defined != NULL)
           error ("identifier %s has been defined here %u:%u\n",
                  defined->pos.ln, defined->pos.ch);
         ret->id = id;
         /* set parms */
-        get->parm = va_arg (ap, int) ? ast_func_parm_pop () : NULL;
+        get->parm = va_arg (ap, int) ? ast_parm_get () : NULL;
         /* set env */
         if (va_arg (ap, int))
           {
-            get->env = env;
-            env = env->outer;
+            get->env = glob_env;
+            glob_env = glob_env->outer;
             ast_env_add (ret);
           }
         break;
@@ -124,7 +130,7 @@ ast_stm_new (int type, ast_pos pos, ...)
     case AST_STM_ASSIGN:
       {
         ast_stm_assign *get = AST_STM_GET (assign, ret);
-        ast_def *id = ast_id_seek (va_arg (ap, char *), pos);
+        ast_def *id = ast_def_seek (pos, va_arg (ap, char *));
         if (id == NULL)
           error ("use undefined identifier %s\n", id);
         ast_exp *exp = va_arg (ap, ast_exp *);
@@ -139,8 +145,8 @@ ast_stm_new (int type, ast_pos pos, ...)
         /* set env */
         if (va_arg (ap, int))
           {
-            get->env = env;
-            env = env->outer;
+            get->env = glob_env;
+            glob_env = glob_env->outer;
           }
         ast_env_add (ret);
         break;
@@ -154,17 +160,17 @@ ast_stm_new (int type, ast_pos pos, ...)
         if (cases == 1 + 1)
           {
             /* both then and else */
-            get->else_env = env;
-            env = env->outer;
-            get->else_env->outer = env->outer;
-            get->then_env = env;
-            env->outer = env->outer;
+            get->else_env = glob_env;
+            glob_env = glob_env->outer;
+            get->else_env->outer = glob_env->outer;
+            get->then_env = glob_env;
+            glob_env->outer = glob_env->outer;
           }
         if (cases == 1 + 0)
           {
             /* only then */
-            get->then_env = env;
-            env->outer = env->outer;
+            get->then_env = glob_env;
+            glob_env->outer = glob_env->outer;
           }
         ast_env_add (ret);
         break;
@@ -200,7 +206,7 @@ ast_exp_new (int type, ast_pos pos, ...)
       {
         ast_exp_elem *get = AST_EXP_GET (elem, ret);
         char *id = va_arg (ap, char *);
-        ast_def *defined = ast_id_seek (id, pos);
+        ast_def *defined = ast_def_seek (pos, id);
         if (defined == NULL)
           error ("use undefined identifier %s\n", id);
         get->id = defined;
@@ -248,9 +254,9 @@ ast_exp_new (int type, ast_pos pos, ...)
 }
 
 ast_def *
-ast_id_seek (const char *name, ast_pos pos)
+ast_def_seek (ast_pos pos, char *name)
 {
-  ast_env *now = env;
+  ast_env *now = glob_env;
   ast_defs *defs = &now->defs;
   ast_def **list = defs->list;
 
@@ -277,12 +283,7 @@ void
 ast_env_init (void)
 {
   ast_env_new ();
-  init_types ();
-}
 
-static void
-init_types (void)
-{
   static const char *names[] = {
     [AST_TYPE_INT8] = "int8",     [AST_TYPE_INT16] = "int16",
     [AST_TYPE_INT32] = "int32",   [AST_TYPE_INT64] = "int64",
@@ -307,7 +308,7 @@ init_types (void)
       def->pos = origin;
 
       get->origin = NULL;
-      ast_defs_add (&env->defs, def);
+      ast_defs_add (&glob_env->defs, def);
     }
 }
 
@@ -316,8 +317,8 @@ ast_env_new (void)
 {
   ast_env *new = checked_malloc (sizeof (ast_env));
   memset (new, 0, sizeof (ast_env));
-  new->outer = env;
-  env = new;
+  new->outer = glob_env;
+  glob_env = new;
 }
 
 void
@@ -328,10 +329,10 @@ ast_env_add (void *ptr)
   switch (type)
     {
     case AST_DEF_ST ... AST_DEF_ED:
-      ast_defs_add (&env->defs, ptr);
+      ast_defs_add (&glob_env->defs, ptr);
       break;
     case AST_STM_ST ... AST_STM_ED:
-      ast_stms_add (&env->stms, ptr);
+      ast_stms_add (&glob_env->stms, ptr);
       break;
     default:
       error ("bad type\n");
@@ -369,29 +370,49 @@ ast_stms_add (ast_stms *stms, ast_stm *stm)
 }
 
 void
-ast_func_parm_push (ast_pos pos, char *id)
+ast_type_add (int cond, ast_pos pos, char *name)
 {
-  ast_def *defined = ast_id_seek (id, pos);
-  if (defined == NULL)
-    error ("use undefined type %s\n", id);
-
-  if (func_parm.size + 1 > func_parm.cap)
+  switch (cond)
     {
-      size_t cap = 2 * func_parm.cap;
-      cap == 0 ? cap = 8 : 0;
-      func_parm.list = realloc (func_parm.list, cap * sizeof (ast_def *));
-      if (func_parm.list == NULL)
-        error ("realloc failed\n");
-      func_parm.cap = cap;
+      /* type: ID */
+    case 1:
+      {
+      }
     }
-  func_parm.list[func_parm.size++] = defined;
+}
+
+ast_def *
+ast_type_get (void)
+{
+  ast_def *ret = glob_type;
+  glob_type = NULL;
+  return ret;
+}
+
+void
+ast_parm_add (ast_pos pos, char *type)
+{
+  ast_def *defined = ast_def_seek (pos, type);
+  if (defined == NULL)
+    error ("use undefined type %s\n", type);
+
+  if (glob_parm.size + 1 > glob_parm.cap)
+    {
+      size_t cap = 2 * glob_parm.cap;
+      cap == 0 ? cap = 8 : 0;
+      glob_parm.list = realloc (glob_parm.list, cap * sizeof (ast_def *));
+      if (glob_parm.list == NULL)
+        error ("realloc failed\n");
+      glob_parm.cap = cap;
+    }
+  glob_parm.list[glob_parm.size++] = defined;
 }
 
 ast_defs *
-ast_func_parm_pop (void)
+ast_parm_get (void)
 {
   ast_defs *ret = checked_malloc (sizeof (ast_defs));
-  *ret = func_parm;
-  memset (&func_parm, 0, sizeof (ast_defs));
+  memcpy (ret, &glob_parm, sizeof (ast_defs));
+  memset (&glob_parm, 0, sizeof (ast_defs));
   return ret;
 }
