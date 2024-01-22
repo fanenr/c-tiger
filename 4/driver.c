@@ -1,5 +1,6 @@
 #include "ast.h"
 #include "lexer.h"
+#include "parser.h"
 #include "tiger.y.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +26,8 @@ main (int argc, char **argv)
       fprintf (stderr, "open file %s failed\n", argv[1]);
       exit (1);
     }
+
+  ast_env_init ();
 
   yyparse ();
 

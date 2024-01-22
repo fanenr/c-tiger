@@ -42,7 +42,7 @@ handle (int tok)
   switch (tok)
     {
     case ID:
-    case STRING:
+    case STR:
       yylval.ptr = string (yytext);
       break;
 

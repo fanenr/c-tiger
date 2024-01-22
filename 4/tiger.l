@@ -5,19 +5,20 @@
 %}
 
 id                    [a-zA-Z_][a-zA-Z0-9_]*
-num                   [0-9]+
 real                  [0-9]+\.[0-9]+
-string                \"[^"\n]*\"
+str                   \"[^"\n]*\"
+num                   [0-9]+
 
 %%
 if                    { ADJ (); RET (IF     ); }
 else                  { ADJ (); RET (ELSE   ); }
+type                  { ADJ (); RET (TYPE   ); }
 while                 { ADJ (); RET (WHILE  ); }
                                                     
 {id}                  { ADJ (); RET (ID     ); }
 {num}                 { ADJ (); RET (NUM    ); }
+{str}                 { ADJ (); RET (STR    ); }
 {real}                { ADJ (); RET (REAL   ); }
-{string}              { ADJ (); RET (STRING ); }
                                                 
 "="                   { ADJ (); RET (EQ     ); }
 "+"                   { ADJ (); RET (PLUS   ); }
@@ -29,6 +30,9 @@ while                 { ADJ (); RET (WHILE  ); }
 ")"                   { ADJ (); RET (RPAREN ); }
 "{"                   { ADJ (); RET (LBRACE ); }
 "}"                   { ADJ (); RET (RBRACE ); }
+
+";"                   { ADJ (); RET (SEMI   ); }
+","                   { ADJ (); RET (COMMA  ); }
 
 "=="                  { ADJ (); RET (LEQ    ); }
 "!="                  { ADJ (); RET (NEQ    ); }
