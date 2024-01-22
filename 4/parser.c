@@ -1,7 +1,6 @@
 #include "ast.h"
 #include "lexer.h"
 #include "parser.h"
-#include <asm-generic/errno.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -284,15 +283,21 @@ ast_env_init (void)
 static void
 init_types (void)
 {
-  static const char *names[] = { [AST_TYPE_INT] = "int",
-                                 [AST_TYPE_FLOAT] = "float",
-                                 [AST_TYPE_STRING] = "string" };
+  static const char *names[] = {
+    [AST_TYPE_INT8] = "int8",     [AST_TYPE_INT16] = "int16",
+    [AST_TYPE_INT32] = "int32",   [AST_TYPE_INT64] = "int64",
+    [AST_TYPE_UINT8] = "uint8",   [AST_TYPE_UINT16] = "uint16",
+    [AST_TYPE_UINT32] = "uint32", [AST_TYPE_UINT64] = "uint64",
+    [AST_TYPE_FLOAT] = "float",   [AST_TYPE_DOUBLE] = "double",
+    [AST_TYPE_ARRAY] = "array",   [AST_TYPE_STRUCT] = "struct",
+    [AST_TYPE_UNION] = "union",   [AST_TYPE_POINTER] = "pointer",
+  };
 
   ast_def *def;
   ast_def_type *get;
   ast_pos origin = { 0 };
 
-  for (int i = AST_TYPE_ST + 1; i <= AST_TYPE_ED - 1; i++)
+  for (int i = AST_TYPE_ELEM_ST + 1; i <= AST_TYPE_ELEM_ED - 1; i++)
     {
       def = checked_malloc (AST_DEF_SIZE (type));
       get = AST_DEF_GET (type, def);
