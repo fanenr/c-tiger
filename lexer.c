@@ -9,6 +9,7 @@
 /* util */
 char *string (const char *src);
 void *checked_malloc (size_t size);
+void *checked_realloc (void *ptr, size_t size);
 
 /* extern */
 extern int yyleng;
@@ -95,7 +96,19 @@ string (const char *src)
   char *ret = checked_malloc (cap);
   if (memcpy (ret, src, cap) != ret)
     {
-      fprintf (stderr, "string copy failed\n");
+      fprintf (stderr, "string failed\n");
+      exit (1);
+    }
+  return ret;
+}
+
+void *
+checked_realloc (void *ptr, size_t size)
+{
+  void *ret = realloc (ptr, size);
+  if (ret == NULL)
+    {
+      fprintf (stderr, "realloc failed\n");
       exit (1);
     }
   return ret;

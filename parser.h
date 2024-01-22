@@ -18,7 +18,7 @@ ast_parm *ast_parm_clear (void);
 #define GPARM ast_parm_clear ()
 
 void ast_env_push (int cond, void *ptr);
-void ast_env_clear (void);
+ast_env *ast_env_clear (void);
 #define GENV ast_env_clear ()
 
 ast_def *ast_def_new (int type, ast_pos pos, ...);

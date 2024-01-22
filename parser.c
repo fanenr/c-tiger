@@ -8,17 +8,147 @@
 
 extern char *string (const char *str);
 extern void *checked_malloc (size_t size);
+extern void *checked_realloc (void *ptr, size_t size);
 
-/* global */
-ast_env *glob_env;
-
-/* private */
+static ast_env *m_env;
+static ast_parm *m_parm;
 static ast_type *m_type;
-static struct
+
+void
+ast_type_push (int cond, void *ptr)
 {
-  unsigned num;
-  ast_type **list;
-} m_parm;
+  switch (cond)
+    {
+    /* type: ID */
+    case 1:
+      {
+        char *name = ptr;
+        ast_def *defined = ast_def_seek (pos, name);
+        if (!defined || defined->kind != AST_DEF_TYPE)
+          error ("use undefined type %s\n", name);
+        ast_def_type *get = AST_DEF_GET (type, defined);
+        m_type = checked_malloc (sizeof (ast_type));
+        memcpy (m_type, get->type, sizeof (ast_type));
+        m_type->name = name;
+        break;
+      }
+    /* type: TIMES ID */
+    case 2:
+      {
+        m_type->kind = AST_TYPE_POINTER;
+        m_type->size = sizeof (void *);
+        m_type->ref = m_type;
+        char *name = checked_malloc (strlen (m_type->name) + 2);
+        name[0] = '*';
+        strcat (name + 1, m_type->name);
+        free (m_type->name);
+        break;
+      }
+    /* type: LBRACK RBRACK type */
+    case 3:
+      {
+        m_type->kind = AST_TYPE_ARRAY;
+        m_type->size = sizeof (void *);
+        m_type->ref = m_type;
+        char *name = checked_malloc (strlen (m_type->name) + 3);
+        strcat (name, "[]");
+        strcat (name + 2, m_type->name);
+        free (m_type->name);
+        break;
+      }
+    default:
+      break;
+    }
+}
+
+ast_type *
+ast_type_clear (void)
+{
+  ast_type *ret = m_type;
+  m_type = NULL;
+  return ret;
+}
+
+void
+ast_parm_push (int cond, void *ptr)
+{
+  switch (cond)
+    {
+    /* parm: ID COLON type */
+    case 1:
+      {
+        m_parm = checked_malloc (sizeof (ast_parm));
+        m_parm->list = checked_malloc (48 * sizeof (ast_parm *));
+        m_parm->list[0] = ptr;
+        m_parm->num = 1;
+        break;
+      }
+    /* parm: parm COMMA ID COLON type */
+    case 2:
+      {
+        m_parm->list[m_parm->num++] = ptr;
+        break;
+      }
+    default:
+      break;
+    }
+}
+
+ast_parm *
+ast_parm_clear (void)
+{
+  ast_parm *ret = m_parm;
+  m_parm = NULL;
+  return ret;
+}
+
+void
+ast_env_push (int cond, void *ptr)
+{
+  int kind = *(int *)ptr;
+  switch (cond)
+    {
+    /* bloc: bloc_elem */
+    case 1:
+      {
+        ast_env *n_env = checked_malloc (sizeof (ast_env));
+        n_env->outer = m_env;
+        if (kind > AST_DEF_ST && kind < AST_DEF_ED)
+          m_env->defs.num--;
+        if (kind > AST_STM_ST && kind < AST_STM_ED)
+          m_env->stms.num--;
+        m_env = n_env;
+        __attribute__ ((fallthrough));
+      }
+    /* bloc: bloc bloc_elem */
+    case 2:
+      {
+        if (kind > AST_DEF_ST && kind < AST_DEF_ED)
+          {
+            m_env->defs.list = checked_realloc (
+                m_env->defs.list, (m_env->defs.num + 1) * sizeof (ast_def *));
+            m_env->defs.list[m_env->defs.num++] = ptr;
+          }
+        if (kind > AST_STM_ST && kind < AST_STM_ED)
+          {
+            m_env->stms.list = checked_realloc (
+                m_env->stms.list, (m_env->stms.num + 1) * sizeof (ast_stm *));
+            m_env->stms.list[m_env->stms.num++] = ptr;
+          }
+        break;
+      }
+    default:
+      break;
+    }
+}
+
+ast_env *
+ast_env_clear (void)
+{
+  ast_env *ret = m_env;
+  m_env = ret->outer;
+  return ret;
+}
 
 ast_def *
 ast_def_new (int type, ast_pos pos, ...)
