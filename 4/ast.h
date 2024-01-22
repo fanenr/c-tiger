@@ -3,6 +3,16 @@
 
 enum
 {
+  AST_TYPE_ST,
+  AST_TYPE_INT,
+  AST_TYPE_FLOAT,
+  AST_TYPE_STRING,
+  AST_TYPE_ED,
+  AST_DEF_ST,
+  AST_DEF_VAR,
+  AST_DEF_TYPE,
+  AST_DEF_FUNC,
+  AST_DEF_ED,
   AST_STM_ST,
   AST_STM_ASSIGN,
   AST_STM_WHILE,
@@ -15,8 +25,8 @@ enum
   AST_EXP_ELEM_ST,
   AST_EXP_ELEM_ID,
   AST_EXP_ELEM_NUM,
+  AST_EXP_ELEM_STR,
   AST_EXP_ELEM_REAL,
-  AST_EXP_ELEM_STRING,
   AST_EXP_ELEM_ED,
   AST_EXP_UNARY_ST,
   AST_EXP_UNARY_UMINUS,
@@ -46,8 +56,15 @@ typedef struct ast_pos
   unsigned ch;
 } ast_pos;
 
-typedef struct ast_stms ast_stms;
+typedef struct ast_env ast_env;
 
+typedef struct ast_defs ast_defs;
+typedef struct ast_def ast_def;
+typedef struct ast_def_var ast_def_var;
+typedef struct ast_def_type ast_def_type;
+typedef struct ast_def_func ast_def_func;
+
+typedef struct ast_stms ast_stms;
 typedef struct ast_stm ast_stm;
 typedef struct ast_stm_assign ast_stm_assign;
 typedef struct ast_stm_while ast_stm_while;
@@ -56,6 +73,38 @@ typedef struct ast_stm_if ast_stm_if;
 typedef struct ast_exp ast_exp;
 typedef struct ast_exp_elem ast_exp_elem;
 typedef struct ast_exp_binary ast_exp_binary;
+
+struct ast_defs
+{
+  unsigned cap;
+  unsigned size;
+  ast_def **list;
+};
+
+struct ast_def
+{
+  unsigned kind;
+  ast_pos pos;
+  char *id;
+} __attribute__ ((aligned (sizeof (void *))));
+
+struct ast_def_var
+{
+  ast_def *type;
+  ast_exp *init;
+};
+
+struct ast_def_type
+{
+  ast_def *origin;
+};
+
+struct ast_def_func
+{
+  ast_env *env;
+  ast_def *type;
+  ast_defs *parm;
+};
 
 struct ast_stms
 {
@@ -72,21 +121,21 @@ struct ast_stm
 
 struct ast_stm_assign
 {
-  ast_exp *exp1;
-  ast_exp *exp2;
+  ast_def *id;
+  ast_exp *exp;
 };
 
 struct ast_stm_while
 {
   ast_exp *exp;
-  ast_stms *stms;
+  ast_env *env;
 };
 
 struct ast_stm_if
 {
   ast_exp *exp;
-  ast_stms *then_stms;
-  ast_stms *else_stms;
+  ast_env *then_env;
+  ast_env *else_env;
 };
 
 struct ast_exp
@@ -100,8 +149,8 @@ struct ast_exp_elem
   union
   {
     long num;
-    char *id;
     double real;
+    ast_def *id;
     char *string;
   };
 };
@@ -110,6 +159,13 @@ struct ast_exp_binary
 {
   ast_exp *exp1;
   ast_exp *exp2;
+};
+
+struct ast_env
+{
+  ast_defs defs;
+  ast_stms stms;
+  ast_env *outer;
 };
 
 #endif
