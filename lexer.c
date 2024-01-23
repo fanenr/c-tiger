@@ -62,6 +62,12 @@ handle (int tok)
   return tok;
 }
 
+int
+yywrap (void)
+{
+  return 1;
+}
+
 void
 error (const char *fmt, ...)
 {

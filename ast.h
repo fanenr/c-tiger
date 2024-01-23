@@ -4,8 +4,8 @@
 enum
 {
   AST_TYPE_ST,
-  AST_TYPE_VOID,
   AST_TYPE_BASE_ST,
+  AST_TYPE_VOID,
   AST_TYPE_INT8,
   AST_TYPE_INT16,
   AST_TYPE_INT32,
@@ -126,7 +126,6 @@ struct ast_type
 {
   unsigned kind;
   unsigned size;
-  char *name;
   union
   {
     /* array and pointer */
@@ -137,8 +136,6 @@ struct ast_type
       unsigned num;
       ast_type **list;
     } mem;
-    /* user defined type */
-    ast_def *def;
   };
 };
 
@@ -165,7 +162,7 @@ struct ast_def
 
 struct ast_def_var
 {
-  ast_def *type;
+  ast_type *type;
   ast_exp *init;
 };
 

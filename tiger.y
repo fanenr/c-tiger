@@ -16,10 +16,10 @@ extern void yyerror(const char *);
 %token <num>  NUM
 %token <ptr>  ID STR
 %token <pos>
-              IF ELSE TYPE WHILE VAR FUNC
-              EQ PLUS MINUS TIMES DIV LT GT LEQ NEQ LTEQ GTEQ
-              LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE
-              COMMA SEMI COLON
+       IF ELSE TYPE WHILE VAR FUNC
+       EQ PLUS MINUS TIMES DIV LT GT LEQ NEQ LTEQ GTEQ
+       LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE
+       COMMA SEMI COLON
 
 %nonassoc IF
 %nonassoc ELSE
@@ -67,6 +67,7 @@ type
       { ast_type_push (2, 0);  }
     | LBRACK RBRACK type
       { ast_type_push (3, 0);  }
+    | 
     ;
 
 def

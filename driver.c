@@ -1,5 +1,4 @@
 #include "ast.h"
-#include "lexer.h"
 #include "parser.h"
 #include "tiger.y.h"
 #include <stdio.h>
@@ -9,7 +8,7 @@ extern FILE *yyin;
 extern int yylex (void);
 extern int yyparse (void);
 
-ast_stms stms;
+extern ast_env *m_env;
 
 int
 main (int argc, char **argv)
@@ -30,23 +29,4 @@ main (int argc, char **argv)
   ast_env_init ();
 
   yyparse ();
-
-  for (unsigned i = 0; i < stms.size; i++)
-    {
-      ast_stm *stm = stms.list[i];
-      printf ("stm `%u`, kind `%u`, at `%u:%u`\n", i + 1, stm->kind,
-              stm->pos.ln, stm->pos.ch);
-    }
-}
-
-int
-yywrap (void)
-{
-  return 1;
-}
-
-void
-yyerror (const char *pos)
-{
-  error ("%s", pos);
 }
