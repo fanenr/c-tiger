@@ -30,6 +30,8 @@ while                 { ADJ (); RET (WHILE  ); }
                                                 
 "("                   { ADJ (); RET (LPAREN ); }
 ")"                   { ADJ (); RET (RPAREN ); }
+"["                   { ADJ (); RET (LBRACK ); }
+"]"                   { ADJ (); RET (RBRACK ); }
 "{"                   { ADJ (); RET (LBRACE ); }
 "}"                   { ADJ (); RET (RBRACE ); }
 

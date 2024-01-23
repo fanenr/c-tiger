@@ -1,17 +1,17 @@
 # comment
-type i32 = int;
 
-int
-func (i32 parm1, i32 parm2)
+type i32 = int8;
+
+func main(parm1: int8, parm2: i32) int32
 {
-  type int32_t = i32;
+  type i64 = int64;
   
-  i32
-  func2 (int32_t parm)
+  var a: i64;
+  var pa: *i64;
+  var arr: []*i64;
+
+  func nested() void
   {
-    type int32 = int32_t;
-    int32 i = 1;
   }
 
-  int32 c = 1;
 }

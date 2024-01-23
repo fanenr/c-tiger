@@ -1,6 +1,7 @@
 #include "ast.h"
 #include "lexer.h"
 #include "parser.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -10,9 +11,9 @@ extern char *string (const char *str);
 extern void *checked_malloc (size_t size);
 extern void *checked_realloc (void *ptr, size_t size);
 
-static ast_env *m_env;
-static ast_parm *m_parm;
-static ast_type *m_type;
+ast_env *m_env;
+ast_parm *m_parm;
+ast_type *m_type;
 
 void
 ast_type_push (int cond, void *ptr)
@@ -29,7 +30,6 @@ ast_type_push (int cond, void *ptr)
         ast_def_type *get = AST_DEF_GET (type, defined);
         m_type = checked_malloc (sizeof (ast_type));
         memcpy (m_type, get->type, sizeof (ast_type));
-        m_type->name = name;
         break;
       }
     /* type: TIMES ID */
@@ -38,10 +38,6 @@ ast_type_push (int cond, void *ptr)
         m_type->kind = AST_TYPE_POINTER;
         m_type->size = sizeof (void *);
         m_type->ref = m_type;
-        char *name = checked_malloc (strlen (m_type->name) + 2);
-        name[0] = '*';
-        strcat (name + 1, m_type->name);
-        free (m_type->name);
         break;
       }
     /* type: LBRACK RBRACK type */
@@ -50,10 +46,6 @@ ast_type_push (int cond, void *ptr)
         m_type->kind = AST_TYPE_ARRAY;
         m_type->size = sizeof (void *);
         m_type->ref = m_type;
-        char *name = checked_malloc (strlen (m_type->name) + 3);
-        strcat (name, "[]");
-        strcat (name + 2, m_type->name);
-        free (m_type->name);
         break;
       }
     default:
@@ -166,27 +158,27 @@ ast_def_new (int type, ast_pos pos, ...)
 
   switch (type)
     {
+    /* def_var: VAR ID COLON type EQ exp SEMI */
     case AST_DEF_VAR:
       {
         ast_def_var *get = AST_DEF_GET (var, ret);
-        /* check and set type */
-        char *type = va_arg (ap, char *);
-        ast_def *defined = ast_def_seek (pos, type);
-        if (defined == NULL)
-          error ("use undefined type %s\n", type);
-        get->type = defined;
         /* check and set id */
         char *id = va_arg (ap, char *);
-        defined = ast_def_seek (pos, id);
+        ast_def *defined = ast_def_seek (pos, id);
         if (defined != NULL)
-          error ("identifier %s has been defined here %u:%u\n",
+          error ("identifier %s has been defined here %u:%u\n", id,
                  defined->pos.ln, defined->pos.ch);
         ret->id = id;
-        /* set init exp */
-        get->init = va_arg (ap, ast_exp *);
-        ast_env_add (ret);
+        /* set type and init exp */
+        ast_type *type = va_arg (ap, ast_type *);
+        ast_exp *init = va_arg (ap, ast_exp *);
+        get->type = type;
+        get->init = init;
+        /* push to env */
+        ast_env_push (2, ret);
         break;
       }
+    /* def_type: TYPE ID EQ type SEMI */
     case AST_DEF_TYPE:
       {
         ast_def_type *get = AST_DEF_GET (type, ret);
@@ -194,43 +186,37 @@ ast_def_new (int type, ast_pos pos, ...)
         char *id = va_arg (ap, char *);
         ast_def *defined = ast_def_seek (pos, id);
         if (defined != NULL)
-          error ("identifier %s has been defined here %u:%u\n",
+          error ("identifier %s has been defined here %u:%u\n", id,
                  defined->pos.ln, defined->pos.ch);
         ret->id = id;
-        /* check and set origin */
-        char *type = va_arg (ap, char *);
-        defined = ast_def_seek (pos, type);
-        if (defined == NULL)
-          error ("the original type %s is undefined\n");
-        get->origin = defined;
-        ast_env_add (ret);
+        /* set type */
+        ast_type *type = va_arg (ap, ast_type *);
+        get->type = type;
+        /* push to env */
+        ast_env_push (2, ret);
         break;
       }
+    /* def_func: FUNC ID LPAREN parm RPAREN type LBRACE bloc RBRACE */
     case AST_DEF_FUNC:
       {
         ast_def_func *get = AST_DEF_GET (func, ret);
-        /* check and set return type */
-        char *type = va_arg (ap, char *);
-        ast_def *defined = ast_def_seek (pos, type);
-        if (defined == NULL)
-          error ("use undefined type %s\n", type);
-        get->type = defined;
         /* check and set id */
         char *id = va_arg (ap, char *);
-        defined = ast_def_seek (pos, id);
+        ast_def *defined = ast_def_seek (pos, id);
         if (defined != NULL)
-          error ("identifier %s has been defined here %u:%u\n",
+          error ("identifier %s has been defined here %u:%u\n", id,
                  defined->pos.ln, defined->pos.ch);
         ret->id = id;
-        /* set parms */
-        get->parm = va_arg (ap, int) ? ast_parm_get () : NULL;
+        /* set parm and type */
+        ast_parm *parm = va_arg (ap, ast_parm *);
+        ast_type *type = va_arg (ap, ast_type *);
+        get->parm = parm;
+        get->type = type;
         /* set env */
-        if (va_arg (ap, int))
-          {
-            get->env = glob_env;
-            glob_env = glob_env->outer;
-            ast_env_add (ret);
-          }
+        ast_env *env = va_arg (ap, ast_env *);
+        get->env = env;
+        /* push to env */
+        ast_env_push (2, ret);
         break;
       }
     }
@@ -257,53 +243,46 @@ ast_stm_new (int type, ast_pos pos, ...)
 
   switch (type)
     {
+    /* stm_assign: ID EQ exp SEMI */
     case AST_STM_ASSIGN:
       {
         ast_stm_assign *get = AST_STM_GET (assign, ret);
-        ast_def *id = ast_def_seek (pos, va_arg (ap, char *));
+        /* check and set id */
+        char *id = va_arg (ap, char *);
+        ast_def *defined = ast_def_seek (pos, id);
         if (id == NULL)
           error ("use undefined identifier %s\n", id);
+        get->var = defined;
+        /* set exp */
         ast_exp *exp = va_arg (ap, ast_exp *);
-        get->id = id;
-        ast_env_add (ret);
+        get->exp = exp;
+        /* push to env */
+        ast_env_push (2, ret);
         break;
       }
+    /* stm_while: WHILE LPAREN exp RPAREN LBRACE bloc RBRACE */
     case AST_STM_WHILE:
       {
         ast_stm_while *get = AST_STM_GET (while, ret);
-        get->exp = va_arg (ap, ast_exp *);
+        /* set exp */
+        ast_exp *exp = va_arg (ap, ast_exp *);
+        get->exp = exp;
         /* set env */
-        if (va_arg (ap, int))
-          {
-            get->env = glob_env;
-            glob_env = glob_env->outer;
-          }
-        ast_env_add (ret);
+        ast_env *env = va_arg (ap, ast_env *);
+        get->env = env;
+        /* push to env */
+        ast_env_push (2, ret);
         break;
       }
+    /* stm_if: IF LPAREN exp RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE
+     */
     case AST_STM_IF_ST + 1 ... AST_STM_IF_ED - 1:
       {
         ast_stm_if *get = AST_STM_GET (if, ret);
-        get->exp = va_arg (ap, ast_exp *);
-        /* set env */
-        int cases = va_arg (ap, int) + va_arg (ap, int);
-        if (cases == 1 + 1)
-          {
-            /* both then and else */
-            get->else_env = glob_env;
-            glob_env = glob_env->outer;
-            get->else_env->outer = glob_env->outer;
-            get->then_env = glob_env;
-            glob_env->outer = glob_env->outer;
-          }
-        if (cases == 1 + 0)
-          {
-            /* only then */
-            get->then_env = glob_env;
-            glob_env->outer = glob_env->outer;
-          }
-        ast_env_add (ret);
-        break;
+        /* set exp */
+        ast_exp *exp = va_arg (ap, ast_exp *);
+        get->exp = exp;
+        /* set envs */
       }
     default:
       error ("unknown stm type %d\n", type);
@@ -318,9 +297,8 @@ ast_exp_new (int type, ast_pos pos, ...)
 {
   static unsigned sizes[] = {
     [(AST_EXP_ELEM_ST + 1)...(AST_EXP_ELEM_ED - 1)] = AST_EXP_SIZE (elem),
-    [AST_EXP_UNARY_UMINUS] = AST_EXP_SIZE (binary),
-    [(AST_EXP_BINARY_ST + 1)...(AST_EXP_BINARY_ED - 1)]
-    = AST_EXP_SIZE (binary),
+    [AST_EXP_UN_UMINUS] = AST_EXP_SIZE (binary),
+    [(AST_EXP_BIN_ST + 1)...(AST_EXP_BIN_ED - 1)] = AST_EXP_SIZE (binary),
   };
 
   ast_exp *ret = checked_malloc (sizes[type]);
@@ -332,9 +310,11 @@ ast_exp_new (int type, ast_pos pos, ...)
 
   switch (type)
     {
+    /* exp_elem: ID */
     case AST_EXP_ELEM_ID:
       {
         ast_exp_elem *get = AST_EXP_GET (elem, ret);
+        /* check and set id */
         char *id = va_arg (ap, char *);
         ast_def *defined = ast_def_seek (pos, id);
         if (defined == NULL)
@@ -342,37 +322,45 @@ ast_exp_new (int type, ast_pos pos, ...)
         get->id = defined;
         break;
       }
+    /* exp_elem: NUM */
     case AST_EXP_ELEM_NUM:
       {
         ast_exp_elem *get = AST_EXP_GET (elem, ret);
         get->num = va_arg (ap, long);
         break;
       }
+    /* exp_elem: STR */
     case AST_EXP_ELEM_STR:
       {
         ast_exp_elem *get = AST_EXP_GET (elem, ret);
         get->string = va_arg (ap, char *);
         break;
       }
+    /* exp_elem: REAL */
     case AST_EXP_ELEM_REAL:
       {
         ast_exp_elem *get = AST_EXP_GET (elem, ret);
         get->real = va_arg (ap, double);
         break;
       }
-    case AST_EXP_UNARY_UMINUS:
+    /* exp_un_uminus: MINUS exp */
+    case AST_EXP_UN_UMINUS:
       {
-        ast_exp *exp2 = va_arg (ap, ast_exp *);
         ast_exp *exp1 = AST_EXP_NEW (ELEM_NUM, pos, 0);
-        ret = AST_EXP_NEW (BINARY_MINUS, pos, exp1, exp2);
+        ast_exp *exp2 = va_arg (ap, ast_exp *);
+        ret = AST_EXP_NEW (BIN_MINUS, pos, exp1, exp2);
         break;
       }
-    case AST_EXP_BINARY_MATH_ST + 1 ... AST_EXP_BINARY_MATH_ED - 1:
-    case AST_EXP_BINARY_LOGIC_ST + 1 ... AST_EXP_BINARY_LOGIC_ED - 1:
+    /* exp_binary: exp OPER exp */
+    case AST_EXP_BIN_MATH_ST + 1 ... AST_EXP_BIN_MATH_ED - 1:
+    case AST_EXP_BIN_LOGIC_ST + 1 ... AST_EXP_BIN_LOGIC_ED - 1:
       {
         ast_exp_binary *get = AST_EXP_GET (binary, ret);
-        get->exp1 = va_arg (ap, ast_exp *);
-        get->exp2 = va_arg (ap, ast_exp *);
+        /* set exp */
+        ast_exp *exp1 = va_arg (ap, ast_exp *);
+        ast_exp *exp2 = va_arg (ap, ast_exp *);
+        get->exp1 = exp1;
+        get->exp2 = exp2;
         break;
       }
     default:
@@ -386,12 +374,12 @@ ast_exp_new (int type, ast_pos pos, ...)
 ast_def *
 ast_def_seek (ast_pos pos, char *name)
 {
-  ast_env *now = glob_env;
-  ast_defs *defs = &now->defs;
-  ast_def **list = defs->list;
+  ast_env *now = m_env;
+  unsigned num = now->defs.num;
+  ast_def **list = now->defs.list;
 
 find:
-  for (unsigned i = 0; i < defs->size; i++)
+  for (unsigned i = 0; i < num; i++)
     {
       if (list[i]->pos.ln >= pos.ln)
         break;
@@ -403,8 +391,8 @@ find:
     return NULL;
 
   now = now->outer;
-  defs = &now->defs;
-  list = defs->list;
+  num = now->defs.num;
+  list = now->defs.list;
 
   goto find;
 }
@@ -412,137 +400,58 @@ find:
 void
 ast_env_init (void)
 {
-  ast_env_new ();
+  m_env = checked_malloc (sizeof (ast_env));
+  memset (m_env, 0, sizeof (ast_env));
 
   static const char *names[] = {
-    [AST_TYPE_INT8] = "int8",     [AST_TYPE_INT16] = "int16",
-    [AST_TYPE_INT32] = "int32",   [AST_TYPE_INT64] = "int64",
-    [AST_TYPE_UINT8] = "uint8",   [AST_TYPE_UINT16] = "uint16",
-    [AST_TYPE_UINT32] = "uint32", [AST_TYPE_UINT64] = "uint64",
-    [AST_TYPE_FLOAT] = "float",   [AST_TYPE_DOUBLE] = "double",
-    [AST_TYPE_ARRAY] = "array",   [AST_TYPE_STRUCT] = "struct",
-    [AST_TYPE_UNION] = "union",   [AST_TYPE_POINTER] = "pointer",
+    /* base */
+    [AST_TYPE_VOID] = "void",     [AST_TYPE_INT8] = "int8",
+    [AST_TYPE_INT16] = "int16",   [AST_TYPE_INT32] = "int32",
+    [AST_TYPE_INT64] = "int64",   [AST_TYPE_UINT8] = "uint8",
+    [AST_TYPE_UINT16] = "uint16", [AST_TYPE_UINT32] = "uint32",
+    [AST_TYPE_UINT64] = "uint64", [AST_TYPE_FLOAT] = "float",
+    [AST_TYPE_DOUBLE] = "double",
+  };
+
+  static unsigned sizes[] = {
+    [AST_TYPE_VOID] = sizeof (void),
+    [AST_TYPE_INT8] = sizeof (int8_t),
+    [AST_TYPE_INT16] = sizeof (int16_t),
+    [AST_TYPE_INT32] = sizeof (int32_t),
+    [AST_TYPE_INT64] = sizeof (int64_t),
+    [AST_TYPE_UINT8] = sizeof (uint8_t),
+    [AST_TYPE_UINT16] = sizeof (uint16_t),
+    [AST_TYPE_UINT32] = sizeof (uint32_t),
+    [AST_TYPE_UINT64] = sizeof (uint64_t),
+    [AST_TYPE_FLOAT] = sizeof (float),
+    [AST_TYPE_DOUBLE] = sizeof (double),
   };
 
   ast_def *def;
   ast_def_type *get;
   ast_pos origin = { 0 };
 
-  for (int i = AST_TYPE_ELEM_ST + 1; i <= AST_TYPE_ELEM_ED - 1; i++)
+  for (int i = AST_TYPE_BASE_ST + 1; i <= AST_TYPE_BASE_ED - 1; i++)
     {
       def = checked_malloc (AST_DEF_SIZE (type));
-      get = AST_DEF_GET (type, def);
-
-      def->kind = AST_DEF_TYPE;
       def->id = string (names[i]);
+      def->kind = AST_DEF_TYPE;
       def->pos = origin;
 
-      get->origin = NULL;
-      ast_defs_add (&glob_env->defs, def);
+      ast_type *type = checked_malloc (sizeof (ast_type));
+      type->size = sizes[i];
+      type->kind = i;
+
+      /* set type */
+      get = AST_DEF_GET (type, def);
+      get->type = type;
+
+      ast_env_push (2, def);
     }
 }
 
 void
-ast_env_new (void)
+yyerror (const char *pos)
 {
-  ast_env *new = checked_malloc (sizeof (ast_env));
-  memset (new, 0, sizeof (ast_env));
-  new->outer = glob_env;
-  glob_env = new;
-}
-
-void
-ast_env_add (void *ptr)
-{
-  int type = *(int *)ptr;
-
-  switch (type)
-    {
-    case AST_DEF_ST ... AST_DEF_ED:
-      ast_defs_add (&glob_env->defs, ptr);
-      break;
-    case AST_STM_ST ... AST_STM_ED:
-      ast_stms_add (&glob_env->stms, ptr);
-      break;
-    default:
-      error ("bad type\n");
-    }
-}
-
-void
-ast_defs_add (ast_defs *defs, ast_def *def)
-{
-  if (defs->size + 1 > defs->cap)
-    {
-      size_t cap = 2 * defs->cap;
-      cap == 0 ? cap = 8 : 0;
-      defs->list = realloc (defs->list, cap * sizeof (ast_def *));
-      if (defs->list == NULL)
-        error ("realloc failed\n");
-      defs->cap = cap;
-    }
-  defs->list[defs->size++] = def;
-}
-
-void
-ast_stms_add (ast_stms *stms, ast_stm *stm)
-{
-  if (stms->size + 1 > stms->cap)
-    {
-      size_t cap = 2 * stms->cap;
-      cap == 0 ? cap = 8 : 0;
-      stms->list = realloc (stms->list, cap * sizeof (ast_stm *));
-      if (stms->list == NULL)
-        error ("realloc failed\n");
-      stms->cap = cap;
-    }
-  stms->list[stms->size++] = stm;
-}
-
-void
-ast_type_add (int cond, ast_pos pos, char *name)
-{
-  switch (cond)
-    {
-      /* type: ID */
-    case 1:
-      {
-      }
-    }
-}
-
-ast_def *
-ast_type_get (void)
-{
-  ast_def *ret = glob_type;
-  glob_type = NULL;
-  return ret;
-}
-
-void
-ast_parm_add (ast_pos pos, char *type)
-{
-  ast_def *defined = ast_def_seek (pos, type);
-  if (defined == NULL)
-    error ("use undefined type %s\n", type);
-
-  if (glob_parm.size + 1 > glob_parm.cap)
-    {
-      size_t cap = 2 * glob_parm.cap;
-      cap == 0 ? cap = 8 : 0;
-      glob_parm.list = realloc (glob_parm.list, cap * sizeof (ast_def *));
-      if (glob_parm.list == NULL)
-        error ("realloc failed\n");
-      glob_parm.cap = cap;
-    }
-  glob_parm.list[glob_parm.size++] = defined;
-}
-
-ast_defs *
-ast_parm_get (void)
-{
-  ast_defs *ret = checked_malloc (sizeof (ast_defs));
-  memcpy (ret, &glob_parm, sizeof (ast_defs));
-  memset (&glob_parm, 0, sizeof (ast_defs));
-  return ret;
+  error ("%s", pos);
 }
