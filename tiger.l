@@ -29,6 +29,7 @@ struct                { ADJ (); RET (STRUCT ); }
 "-"                   { ADJ (); RET (MINUS  ); }
 "*"                   { ADJ (); RET (TIMES  ); }
 "/"                   { ADJ (); RET (DIV    ); }
+"%"                   { ADJ (); RET (MOD    ); }
                                                 
 "("                   { ADJ (); RET (LPAREN ); }
 ")"                   { ADJ (); RET (RPAREN ); }
@@ -41,6 +42,7 @@ struct                { ADJ (); RET (STRUCT ); }
 ";"                   { ADJ (); RET (SEMI   ); }
 ":"                   { ADJ (); RET (COLON  ); }
 
+"->"                  { ADJ (); RET (PMEM   ); }
 "=="                  { ADJ (); RET (LEQ    ); }
 "!="                  { ADJ (); RET (NEQ    ); }
 "<="                  { ADJ (); RET (LTEQ   ); }
