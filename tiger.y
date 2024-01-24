@@ -1,4 +1,5 @@
 %{
+#include "lexer.h"
 #include "parser.h"
 
 extern int yylex (void);
@@ -151,13 +152,13 @@ exp
 
 exp_elem
     : ID
-      { $$ = AST_EXP_NEW (ELEM_ID, pos, $1);      }
+      { $$ = AST_EXP_NEW (ELEM_ID, GPOS, $1);      }
     | NUM
-      { $$ = AST_EXP_NEW (ELEM_NUM, pos, $1);     }
+      { $$ = AST_EXP_NEW (ELEM_NUM, GPOS, $1);     }
     | STR
-      { $$ = AST_EXP_NEW (ELEM_STR, pos, $1);     }
+      { $$ = AST_EXP_NEW (ELEM_STR, GPOS, $1);     }
     | REAL
-      { $$ = AST_EXP_NEW (ELEM_REAL, pos, $1);    }
+      { $$ = AST_EXP_NEW (ELEM_REAL, GPOS, $1);    }
     ;
 
 exp_paren

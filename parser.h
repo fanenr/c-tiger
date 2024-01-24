@@ -3,9 +3,6 @@
 
 #include "ast.h"
 
-/* from lexer */
-extern ast_pos pos;
-
 /* init global env */
 void ast_env_init (void);
 

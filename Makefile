@@ -1,28 +1,29 @@
-parser: driver.o tiger.y.o tiger.l.o parser.o lexer.o
+tiger: driver.o tiger.y.o tiger.l.o parser.o lexer.o util.o
 	gcc -g -o $@ $^
 
-driver.o: driver.c tiger.y.h lexer.h parser.h
+driver.o: driver.c ast.h util.h parser.h lexer.h tiger.y.h
 	gcc -g -c $<
 
-tiger.y.o: tiger.y.c parser.h
+tiger.y.o: tiger.y.c ast.h util.h parser.h lexer.h tiger.y.h
 	gcc -g -c $<
 
-# generate tiger.y.c and tiger.y.h
 tiger.y.c tiger.y.h: tiger.y
 	bison -v --header=$<.h -o $<.c $<
 
-tiger.l.o: tiger.l.c tiger.y.h lexer.h
+tiger.l.o: tiger.l.c ast.h util.h parser.h lexer.h tiger.y.h
 	gcc -g -c $<
 
-# generate tiger.l.c
 tiger.l.c: tiger.l
 	flex -o $@ $<
 
-parser.o: parser.c parser.h lexer.h ast.h
+parser.o: parser.c ast.h util.h parser.h lexer.h tiger.y.h
 	gcc -g -c $<
 
-lexer.o: lexer.c lexer.h tiger.y.h
+lexer.o: lexer.c ast.h util.h parser.h lexer.h tiger.y.h
+	gcc -g -c $<
+
+util.o: util.c util.h
 	gcc -g -c $<
 
 clean:
-	rm -f *.o *.l.c *.y.h *.y.c parser
+	rm -f *.o *.l.c *.y.h *.y.c *.y.output tiger
