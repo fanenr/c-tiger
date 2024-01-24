@@ -1,4 +1,5 @@
 #include "ast.h"
+#include "util.h"
 #include "lexer.h"
 #include "parser.h"
 #include <stdio.h>
@@ -7,10 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-
-extern char *string (const char *str);
-extern void *checked_malloc (size_t size);
-extern void *checked_realloc (void *ptr, size_t size);
 
 ast_env *m_env;
 ast_env *m_parm;
@@ -43,7 +40,7 @@ ast_type_push (ast_type **type, int cond, void *ptr)
     case 1:
       {
         char *name = ptr;
-        ast_type *get = checked_malloc (sizeof (ast_type));
+        ast_type *get = checked_alloc (sizeof (ast_type));
         get->kind = AST_TYPE_USER;
         get->size = 0;
         for (int i = AST_TYPE_BASE_ST + 1; i <= AST_TYPE_BASE_ED - 1; i++)
@@ -58,7 +55,7 @@ ast_type_push (ast_type **type, int cond, void *ptr)
     /* type: TIMES ID */
     case 2:
       {
-        ast_type *get = checked_malloc (sizeof (ast_type));
+        ast_type *get = checked_alloc (sizeof (ast_type));
         get->kind = AST_TYPE_POINTER;
         get->size = sizeof (void *);
         get->ref = *type;
@@ -68,7 +65,7 @@ ast_type_push (ast_type **type, int cond, void *ptr)
     /* type: LBRACK RBRACK type */
     case 3:
       {
-        ast_type *get = checked_malloc (sizeof (ast_type));
+        ast_type *get = checked_alloc (sizeof (ast_type));
         get->kind = AST_TYPE_ARRAY;
         get->size = sizeof (void *);
         get->ref = *type;
@@ -86,7 +83,7 @@ ast_parm_push (ast_env **env, int cond, char *name, ast_type *type)
     /* parm: ID COLON type */
     case 1:
       {
-        ast_env *get = checked_malloc (sizeof (ast_env));
+        ast_env *get = checked_alloc (sizeof (ast_env));
         get->outer = GENV;
         *env = get;
         __attribute__ ((fallthrough));
@@ -94,9 +91,9 @@ ast_parm_push (ast_env **env, int cond, char *name, ast_type *type)
     /* parm: parm COMMA ID COLON type */
     case 2:
       {
-        ast_def *def = checked_malloc (AST_DEF_SIZE (var));
+        ast_def *def = checked_alloc (AST_DEF_SIZE (var));
         def->kind = AST_DEF_VAR;
-        def->pos = pos;
+        def->pos = m_pos;
         def->id = name;
         ast_def_var *get = AST_DEF_GET (var, def);
         get->type = type;
@@ -120,7 +117,7 @@ ast_env_push (ast_env **env, int cond, void *ptr)
           old->defs.num--;
         if (kind > AST_STM_ST && kind < AST_STM_ED)
           old->stms.num--;
-        ast_env *new = checked_malloc (sizeof (ast_env));
+        ast_env *new = checked_alloc (sizeof (ast_env));
         new->outer = old;
         *env = new;
         __attribute__ ((fallthrough));
@@ -161,7 +158,7 @@ ast_def_new (int type, ast_pos pos, ...)
                               [AST_DEF_TYPE] = AST_DEF_SIZE (type),
                               [AST_DEF_FUNC] = AST_DEF_SIZE (func) };
 
-  ast_def *ret = checked_malloc (sizes[type]);
+  ast_def *ret = checked_alloc (sizes[type]);
   ret->kind = type;
   ret->pos = pos;
 
@@ -200,7 +197,7 @@ ast_def_new (int type, ast_pos pos, ...)
         ast_type *type = ptr;
         if (kind != 1)
           {
-            type = checked_malloc (sizeof (ast_type));
+            type = checked_alloc (sizeof (ast_type));
             type->kind = kind == 2 ? AST_TYPE_UNION : AST_TYPE_STRUCT;
             type->mem = ptr;
           }
@@ -252,7 +249,7 @@ ast_stm_new (int type, ast_pos pos, ...)
           [(AST_STM_IF_ST + 1)...(AST_STM_IF_ED - 1)] = AST_STM_SIZE (if),
         };
 
-  ast_stm *ret = checked_malloc (sizes[type]);
+  ast_stm *ret = checked_alloc (sizes[type]);
   ret->kind = type;
   ret->pos = pos;
 
@@ -329,7 +326,7 @@ ast_exp_new (int type, ast_pos pos, ...)
     [(AST_EXP_BIN_ST + 1)...(AST_EXP_BIN_ED - 1)] = AST_EXP_SIZE (binary),
   };
 
-  ast_exp *ret = checked_malloc (sizes[type]);
+  ast_exp *ret = checked_alloc (sizes[type]);
   ret->kind = type;
   ret->pos = pos;
 
@@ -415,7 +412,7 @@ ast_def_seek (ast_pos pos, char *name)
 void
 ast_env_init (void)
 {
-  m_env = checked_malloc (sizeof (ast_env));
+  m_env = checked_alloc (sizeof (ast_env));
 
   ast_def *def;
   ast_def_type *get;
@@ -423,12 +420,12 @@ ast_env_init (void)
 
   for (int i = AST_TYPE_BASE_ST + 1; i <= AST_TYPE_BASE_ED - 1; i++)
     {
-      def = checked_malloc (AST_DEF_SIZE (type));
-      def->id = string (base_type_name[i]);
+      def = checked_alloc (AST_DEF_SIZE (type));
+      def->id = checked_strdup (base_type_name[i]);
       def->kind = AST_DEF_TYPE;
       def->pos = origin;
 
-      ast_type *type = checked_malloc (sizeof (ast_type));
+      ast_type *type = checked_alloc (sizeof (ast_type));
       type->size = base_type_size[i];
       type->kind = i;
 
@@ -443,5 +440,5 @@ ast_env_init (void)
 void
 yyerror (const char *pos)
 {
-  error ("%s", pos);
+  error (m_pos, "%s", pos);
 }
