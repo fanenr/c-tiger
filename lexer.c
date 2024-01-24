@@ -92,6 +92,7 @@ checked_malloc (size_t size)
       fprintf (stderr, "malloc failed\n");
       exit (1);
     }
+  memset (ret, 0, size);
   return ret;
 }
 

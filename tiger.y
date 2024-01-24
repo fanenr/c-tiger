@@ -16,7 +16,7 @@ extern void yyerror(const char *);
 %token <num>  NUM
 %token <ptr>  ID STR
 %token <pos>
-       IF ELSE TYPE WHILE VAR FUNC
+       IF ELSE TYPE WHILE VAR FUNC STRUCT UNION
        EQ PLUS MINUS TIMES DIV LT GT LEQ NEQ LTEQ GTEQ
        LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE
        COMMA SEMI COLON
@@ -48,9 +48,9 @@ prog
 
 bloc
     : bloc_elem
-      { ast_env_push (1, $1); }
+      { GENV_PUSH (1, $1); }
     | bloc bloc_elem
-      { ast_env_push (2, $2); }
+      { GENV_PUSH (2, $2); }
     ;
 
 bloc_elem
@@ -62,12 +62,11 @@ bloc_elem
 
 type
     : ID
-      { ast_type_push (1, $1); }
+      { GTYPE_PUSH (1, $1); }
     | TIMES type
-      { ast_type_push (2, 0);  }
+      { GTYPE_PUSH (2, 0);  }
     | LBRACK RBRACK type
-      { ast_type_push (3, 0);  }
-    | 
+      { GTYPE_PUSH (3, 0);  }
     ;
 
 def
@@ -88,7 +87,11 @@ def_var
 
 def_type
     : TYPE ID EQ type SEMI
-      { $$ = AST_DEF_NEW (TYPE, $1, $2, GTYPE);    }
+      { $$ = AST_DEF_NEW (TYPE, $1, 1, $2, GTYPE); }
+    | UNION ID LBRACE parm COMMA RBRACE
+      { $$ = AST_DEF_NEW (TYPE, $1, 2, $2, GPARM); }
+    | STRUCT ID LBRACE parm COMMA RBRACE
+      { $$ = AST_DEF_NEW (TYPE, $1, 3, $2, GPARM); }
     ;
 
 def_func
@@ -104,9 +107,9 @@ def_func
 
 parm
     : ID COLON type
-      { ast_parm_push (1, GTYPE); }
+      { GPARM_PUSH (1, $1, GTYPE); }
     | parm COMMA ID COLON type
-      { ast_parm_push (2, GTYPE); }
+      { GPARM_PUSH (2, $3, GTYPE); }
     ;
 
 stm
@@ -130,9 +133,9 @@ stm_while
 
 stm_if
     : IF LPAREN exp RPAREN LBRACE bloc RBRACE
-      { $$ = AST_STM_NEW (IF1, $1, $2, 1, 0);   }
+      { $$ = AST_STM_NEW (IF1, $1, $2, GENV, 0); }
     | IF LPAREN exp RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE
-      { $$ = AST_STM_NEW (IF2, $1, $2, 1, 1);   }
+      { $$ = AST_STM_NEW (IF2, $1, $2, 0, GENV); }
     ;
 
 exp

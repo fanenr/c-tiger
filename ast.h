@@ -131,22 +131,8 @@ struct ast_type
     /* array and pointer */
     ast_type *ref;
     /* union and struct */
-    struct
-    {
-      unsigned num;
-      ast_type **list;
-    } mem;
+    ast_env *mem;
   };
-};
-
-/* ********************************************** */
-/*                    ast parm                    */
-/* ********************************************** */
-
-struct ast_parm
-{
-  unsigned num;
-  ast_type **list;
 };
 
 /* ********************************************** */
@@ -175,7 +161,7 @@ struct ast_def_func
 {
   ast_env *env;
   ast_type *type;
-  ast_parm *parm;
+  unsigned parm_num;
 };
 
 /* ********************************************** */
