@@ -6,6 +6,7 @@ enum
   AST_TYPE_ST,
   AST_TYPE_BASE_ST,
   AST_TYPE_VOID,
+  AST_TYPE_BOOL,
   AST_TYPE_INT8,
   AST_TYPE_INT16,
   AST_TYPE_INT32,
@@ -49,14 +50,27 @@ enum
   AST_EXP_ELEM_REAL,
   AST_EXP_ELEM_ED,
   AST_EXP_UN_ST,
+  AST_EXP_UN_UPLUS,
   AST_EXP_UN_UMINUS,
+  AST_EXP_UN_DADDR,
+  AST_EXP_UN_ADDR,
   AST_EXP_UN_ED,
   AST_EXP_BIN_ST,
+  AST_EXP_BIN_BIT_ST,
+  AST_EXP_BIN_AND,
+  AST_EXP_BIN_OR,
+  AST_EXP_BIN_XOR,
+  AST_EXP_BIN_BIT_ED,
+  AST_EXP_BIN_MEM_ST,
+  AST_EXP_BIN_MEM,
+  AST_EXP_BIN_PMEM,
+  AST_EXP_BIN_MEM_ED,
   AST_EXP_BIN_MATH_ST,
   AST_EXP_BIN_PLUS,
   AST_EXP_BIN_MINUS,
   AST_EXP_BIN_TIMES,
   AST_EXP_BIN_DIV,
+  AST_EXP_BIN_MOD,
   AST_EXP_BIN_MATH_ED,
   AST_EXP_BIN_LOGIC_ST,
   AST_EXP_BIN_LT,
@@ -65,6 +79,8 @@ enum
   AST_EXP_BIN_NEQ,
   AST_EXP_BIN_LTEQ,
   AST_EXP_BIN_GTEQ,
+  AST_EXP_BIN_LAND,
+  AST_EXP_BIN_LOR,
   AST_EXP_BIN_LOGIC_ED,
   AST_EXP_BIN_ED,
   AST_EXP_ED,
@@ -87,6 +103,7 @@ typedef struct ast_stm_assign ast_stm_assign;
 
 typedef struct ast_exp ast_exp;
 typedef struct ast_exp_elem ast_exp_elem;
+typedef struct ast_exp_unary ast_exp_unary;
 typedef struct ast_exp_binary ast_exp_binary;
 
 /* ********************************************** */
@@ -212,6 +229,11 @@ struct ast_exp_elem
     ast_def *id;
     char *string;
   };
+};
+
+struct ast_exp_unary
+{
+  ast_exp *exp;
 };
 
 struct ast_exp_binary

@@ -30,7 +30,10 @@ struct                { ADJ (); RET (STRUCT ); }
 "*"                   { ADJ (); RET (TIMES  ); }
 "/"                   { ADJ (); RET (DIV    ); }
 "%"                   { ADJ (); RET (MOD    ); }
-                                                
+"&"                   { ADJ (); RET (AND    ); }
+"^"                   { ADJ (); RET (XOR    ); }
+"|"                   { ADJ (); RET (OR     ); }
+
 "("                   { ADJ (); RET (LPAREN ); }
 ")"                   { ADJ (); RET (RPAREN ); }
 "["                   { ADJ (); RET (LBRACK ); }
@@ -38,6 +41,7 @@ struct                { ADJ (); RET (STRUCT ); }
 "{"                   { ADJ (); RET (LBRACE ); }
 "}"                   { ADJ (); RET (RBRACE ); }
 
+"."                   { ADJ (); RET (DOT    ); }
 ","                   { ADJ (); RET (COMMA  ); }
 ";"                   { ADJ (); RET (SEMI   ); }
 ":"                   { ADJ (); RET (COLON  ); }
@@ -47,6 +51,8 @@ struct                { ADJ (); RET (STRUCT ); }
 "!="                  { ADJ (); RET (NEQ    ); }
 "<="                  { ADJ (); RET (LTEQ   ); }
 ">="                  { ADJ (); RET (GTEQ   ); }
+"&&"                  { ADJ (); RET (LAND   ); }
+"||"                  { ADJ (); RET (LOR    ); }
                                                 
 [ \t]+                { ADJ ();                }
 #.*                   { ADJ ();                }

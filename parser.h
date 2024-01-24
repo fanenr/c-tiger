@@ -41,6 +41,4 @@ ast_exp *ast_exp_new (int type, ast_pos pos, ...);
 #define AST_STM_SIZE(TYPE) (sizeof (ast_stm) + sizeof (ast_stm_##TYPE))
 #define AST_EXP_SIZE(TYPE) (sizeof (ast_exp) + sizeof (ast_exp_##TYPE))
 
-ast_def *ast_def_seek (ast_pos pos, char *name);
-
 #endif
