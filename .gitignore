@@ -1,6 +1,7 @@
 test
 lexer
 parser
+tiger
 
 *.o
 *.l.c
