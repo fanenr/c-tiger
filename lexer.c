@@ -56,7 +56,6 @@ handle (int tok)
   return tok;
 }
 
-
 void
 error (ast_pos pos, const char *fmt, ...)
 {
