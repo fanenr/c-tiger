@@ -40,6 +40,7 @@ enum
   AST_STM_IF_ED,
   AST_STM_WHILE,
   AST_STM_ASSIGN,
+  AST_STM_RETURN,
   AST_STM_ED,
 
   AST_EXP_ST,
@@ -64,6 +65,7 @@ enum
   AST_EXP_BIN_MEM_ST,
   AST_EXP_BIN_MEM,
   AST_EXP_BIN_PMEM,
+  AST_EXP_BIN_INDEX,
   AST_EXP_BIN_MEM_ED,
   AST_EXP_BIN_MATH_ST,
   AST_EXP_BIN_PLUS,
@@ -82,7 +84,9 @@ enum
   AST_EXP_BIN_LAND,
   AST_EXP_BIN_LOR,
   AST_EXP_BIN_LOGIC_ED,
+  AST_EXP_BIN_CALL,
   AST_EXP_BIN_ED,
+  AST_EXP_COMMA,
   AST_EXP_ED,
 };
 
@@ -240,6 +244,12 @@ struct ast_exp_binary
 {
   ast_exp *exp1;
   ast_exp *exp2;
+};
+
+struct ast_exp_comma
+{
+  unsigned num;
+  ast_exp **list;
 };
 
 #endif

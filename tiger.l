@@ -18,6 +18,7 @@ type                  { ADJ (); RET (TYPE   ); }
 while                 { ADJ (); RET (WHILE  ); }
 union                 { ADJ (); RET (UNION  ); }
 struct                { ADJ (); RET (STRUCT ); }
+return                { ADJ (); RET (RETURN ); }
 
 {id}                  { ADJ (); RET (ID     ); }
 {num}                 { ADJ (); RET (NUM    ); }

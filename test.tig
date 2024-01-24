@@ -1,26 +1,25 @@
 # comment
-
 type i32 = int8;
 
 union u {
-  m32: []i32,
-  m64: *[]*int64,
+  var m32: i32;
+  var m64: []*int64;
 }
 
 struct s {
-  m32: i32,
-  m64: []*int64,
+  var m32: i32;
+  var m64: []*int64;
+  func set_m32(val: i32) void {
+    this->m32 = val;
+  }
+  func get_m32() i32 {
+    return this->m32;
+  }
 }
 
 func main(parm1: int8, parm2: i32) int32 {
-  type i64 = int64;
-  
-  var a: i64;
-  var pa: *i64 = &a;
-
   var b: s;
   var pb: *s = &s;
-
   var c: i32 = b.m32;
   var d: []*int64 = pb->m64;
 }
