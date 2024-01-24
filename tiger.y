@@ -17,19 +17,30 @@ extern void yyerror(const char *);
 %token <num>  NUM
 %token <ptr>  ID STR
 %token <pos>
-       IF ELSE TYPE WHILE VAR FUNC STRUCT UNION
-       EQ PLUS MINUS TIMES DIV LT GT LEQ NEQ LTEQ GTEQ
+       IF VAR ELSE TYPE FUNC WHILE STRUCT UNION
+       EQ PLUS MINUS TIMES DIV MOD LT GT LEQ NEQ LTEQ GTEQ
+       OR AND XOR LOR DOT PMEM LAND
        LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE
        COMMA SEMI COLON
 
 %nonassoc IF
 %nonassoc ELSE
-%nonassoc EQ
-%nonassoc LEQ NEQ
+
+%right EQ
+%left LOR
+%left LAND
+%left OR
+%left XOR
+%left AND
+%left LEQ NEQ
 %left LT GT LTEQ GTEQ
 %left PLUS MINUS
-%left TIMES DIV
-%nonassoc UMINUS
+%left TIMES DIV MOD
+%right ADDR
+%right DADDR
+%right UPLUS UMINUS
+%left PMEM
+%left DOT
 
 %start prog
 %type <ptr>
@@ -37,7 +48,7 @@ extern void yyerror(const char *);
       def def_var def_type def_func
       stm stm_assign stm_while stm_if
       exp exp_elem exp_paren exp_unary exp_binary
-      exp_binary_math exp_binary_logic
+      exp_binary_bit exp_binary_math exp_binary_logic
 
 %%
 prog
@@ -167,15 +178,41 @@ exp_paren
     ;
 
 exp_unary
-    : MINUS exp %prec UMINUS
-      { $$ = AST_EXP_NEW (UN_UMINUS, $1, $2);     }
+    : PLUS exp %prec UPLUS
+      { $$ = AST_EXP_NEW (UN_UMINUS, $1, $2); }
+    | MINUS exp %prec UMINUS
+      { $$ = AST_EXP_NEW (UN_UMINUS, $1, $2); }
+    | TIMES exp %prec DADDR
+      { }
+    | AND exp %prec ADDR
+      { }
     ;
 
 exp_binary
-    : exp_binary_math
+    : exp_binary_bit
+      { $$ = $1; }
+    | exp_binary_mem
+      { }
+    | exp_binary_math
       { $$ = $1; }
     | exp_binary_logic
       { $$ = $1; }
+    ;
+
+exp_binary_bit
+    : exp AND exp
+      { }
+    | exp OR exp
+      { }
+    | exp XOR exp
+      { }
+    ;
+
+exp_binary_mem
+    : exp DOT exp
+      { }
+    | exp PMEM exp
+      { }
     ;
 
 exp_binary_math
@@ -187,6 +224,8 @@ exp_binary_math
       { $$ = AST_EXP_NEW (BIN_TIMES, $2, $1, $3); }
     | exp DIV exp
       { $$ = AST_EXP_NEW (BIN_DIV, $2, $1, $3);   }
+    | exp MOD exp
+      { }
     ;
 
 exp_binary_logic
@@ -202,5 +241,9 @@ exp_binary_logic
       { $$ = AST_EXP_NEW (BIN_LTEQ, $2, $1, $3);  }
     | exp GTEQ exp
       { $$ = AST_EXP_NEW (BIN_GTEQ, $2, $1, $3);  }
-    ;
+    | exp LAND exp
+      { }
+    | exp LOR exp
+      { }
+    ;  
 %%
