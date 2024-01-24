@@ -14,21 +14,21 @@ ast_env *m_parm;
 ast_type *m_type;
 
 const char *base_type_name[] = {
-  [AST_TYPE_VOID] = "void",     [AST_TYPE_INT8] = "int8",
-  [AST_TYPE_INT16] = "int16",   [AST_TYPE_INT32] = "int32",
-  [AST_TYPE_INT64] = "int64",   [AST_TYPE_UINT8] = "uint8",
-  [AST_TYPE_UINT16] = "uint16", [AST_TYPE_UINT32] = "uint32",
-  [AST_TYPE_UINT64] = "uint64", [AST_TYPE_FLOAT] = "float",
-  [AST_TYPE_DOUBLE] = "double",
+  [AST_TYPE_VOID] = "void",     [AST_TYPE_BOOL] = "bool",
+  [AST_TYPE_INT8] = "int8",     [AST_TYPE_INT16] = "int16",
+  [AST_TYPE_INT32] = "int32",   [AST_TYPE_INT64] = "int64",
+  [AST_TYPE_UINT8] = "uint8",   [AST_TYPE_UINT16] = "uint16",
+  [AST_TYPE_UINT32] = "uint32", [AST_TYPE_UINT64] = "uint64",
+  [AST_TYPE_FLOAT] = "float",   [AST_TYPE_DOUBLE] = "double",
 };
 
 const unsigned base_type_size[] = {
-  [AST_TYPE_VOID] = sizeof (void),       [AST_TYPE_INT8] = sizeof (int8_t),
-  [AST_TYPE_INT16] = sizeof (int16_t),   [AST_TYPE_INT32] = sizeof (int32_t),
-  [AST_TYPE_INT64] = sizeof (int64_t),   [AST_TYPE_UINT8] = sizeof (uint8_t),
-  [AST_TYPE_UINT16] = sizeof (uint16_t), [AST_TYPE_UINT32] = sizeof (uint32_t),
-  [AST_TYPE_UINT64] = sizeof (uint64_t), [AST_TYPE_FLOAT] = sizeof (float),
-  [AST_TYPE_DOUBLE] = sizeof (double),
+  [AST_TYPE_VOID] = sizeof (void),       [AST_TYPE_BOOL] = sizeof (bool),
+  [AST_TYPE_INT8] = sizeof (int8_t),     [AST_TYPE_INT16] = sizeof (int16_t),
+  [AST_TYPE_INT32] = sizeof (int32_t),   [AST_TYPE_INT64] = sizeof (int64_t),
+  [AST_TYPE_UINT8] = sizeof (uint8_t),   [AST_TYPE_UINT16] = sizeof (uint16_t),
+  [AST_TYPE_UINT32] = sizeof (uint32_t), [AST_TYPE_UINT64] = sizeof (uint64_t),
+  [AST_TYPE_FLOAT] = sizeof (float),     [AST_TYPE_DOUBLE] = sizeof (double),
 };
 
 void
@@ -141,14 +141,6 @@ ast_env_push (ast_env **env, int cond, void *ptr)
         break;
       }
     }
-}
-
-ast_env *
-ast_env_clear (void)
-{
-  ast_env *ret = m_env;
-  m_env = ret->outer;
-  return ret;
 }
 
 ast_def *
@@ -348,32 +340,41 @@ ast_exp_new (int type, ast_pos pos, ...)
     case AST_EXP_ELEM_NUM:
       {
         ast_exp_elem *get = AST_EXP_GET (elem, ret);
-        get->num = va_arg (ap, long);
+        long num = va_arg (ap, long);
+        /* set num */
+        get->num = num;
         break;
       }
     /* exp_elem: STR */
     case AST_EXP_ELEM_STR:
       {
         ast_exp_elem *get = AST_EXP_GET (elem, ret);
-        get->string = va_arg (ap, char *);
+        char *string = va_arg (ap, char *);
+        /* set string */
+        get->string = string;
         break;
       }
     /* exp_elem: REAL */
     case AST_EXP_ELEM_REAL:
       {
         ast_exp_elem *get = AST_EXP_GET (elem, ret);
-        get->real = va_arg (ap, double);
+        double real = va_arg (ap, double);
+        /* set real */
+        get->real = real;
         break;
       }
-    /* exp_un_uminus: MINUS exp */
-    case AST_EXP_UN_UMINUS:
+    /* exp_unary: OP exp */
+    case AST_EXP_UN_ST + 1 ... AST_EXP_UN_ED - 1:
       {
-        ast_exp *exp1 = AST_EXP_NEW (ELEM_NUM, pos, 0);
-        ast_exp *exp2 = va_arg (ap, ast_exp *);
-        ret = AST_EXP_NEW (BIN_MINUS, pos, exp1, exp2);
+        ast_exp_unary *get = AST_EXP_GET (unary, ret);
+        ast_exp *exp = va_arg (ap, ast_exp *);
+        /* set exp */
+        get->exp = exp;
         break;
       }
-    /* exp_binary: exp OPER exp */
+    /* exp_binary: exp OP exp */
+    case AST_EXP_BIN_BIT_ST + 1 ... AST_EXP_BIN_BIT_ED - 1:
+    case AST_EXP_BIN_MEM_ST + 1 ... AST_EXP_BIN_MEM_ED - 1:
     case AST_EXP_BIN_MATH_ST + 1 ... AST_EXP_BIN_MATH_ED - 1:
     case AST_EXP_BIN_LOGIC_ST + 1 ... AST_EXP_BIN_LOGIC_ED - 1:
       {
@@ -389,24 +390,6 @@ ast_exp_new (int type, ast_pos pos, ...)
 
   va_end (ap);
   return ret;
-}
-
-ast_def *
-ast_def_seek (ast_pos pos, char *name)
-{
-  ast_env *now = m_env;
-  unsigned num = now->defs.num;
-  ast_def **list = now->defs.list;
-
-  for (unsigned i = 0; i < num; i++)
-    {
-      if (list[i]->pos.ln >= pos.ln)
-        break;
-      if (strcmp (name, list[i]->id) == 0)
-        return list[i];
-    }
-
-  return NULL;
 }
 
 void

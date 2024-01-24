@@ -8,14 +8,19 @@ union u {
 }
 
 struct s {
-  m32: []i32,
-  m64: *[]*int64,
+  m32: i32,
+  m64: []*int64,
 }
 
 func main(parm1: int8, parm2: i32) int32 {
   type i64 = int64;
   
   var a: i64;
-  var pa: *i64;
-  var arr: []*i64;
+  var pa: *i64 = &a;
+
+  var b: s;
+  var pb: *s = &s;
+
+  var c: i32 = b.m32;
+  var d: []*int64 = pb->m64;
 }
