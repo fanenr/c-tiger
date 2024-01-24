@@ -56,11 +56,6 @@ handle (int tok)
   return tok;
 }
 
-int
-yywrap (void)
-{
-  return 1;
-}
 
 void
 error (ast_pos pos, const char *fmt, ...)
@@ -71,4 +66,10 @@ error (ast_pos pos, const char *fmt, ...)
   vfprintf (stderr, fmt, ap);
   va_end (ap);
   exit (1);
+}
+
+int
+yywrap (void)
+{
+  return 1;
 }

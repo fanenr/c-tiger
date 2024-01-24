@@ -14,7 +14,7 @@ checked_strdup (const char *src)
     goto err;
   return ret;
 err:
-  fprintf (stderr, "string failed\n");
+  fprintf (stderr, "strdup failed\n");
   exit (1);
 }
 
@@ -23,12 +23,13 @@ checked_alloc (size_t size)
 {
   void *ret = malloc (size);
   if (ret == NULL)
-    {
-      fprintf (stderr, "malloc failed\n");
-      exit (1);
-    }
-  memset (ret, 0, size);
+    goto err;
+  if (memset (ret, 0, size) != ret)
+    goto err;
   return ret;
+err:
+  fprintf (stderr, "malloc failed\n");
+  exit (1);
 }
 
 void *
