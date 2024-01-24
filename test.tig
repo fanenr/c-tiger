@@ -2,6 +2,16 @@
 
 type i32 = int8;
 
+union u {
+  m32: []i32,
+  m64: *[]*int64,
+}
+
+struct s {
+  m32: []i32,
+  m64: *[]*int64,
+}
+
 func main(parm1: int8, parm2: i32) int32
 {
   type i64 = int64;
@@ -9,9 +19,4 @@ func main(parm1: int8, parm2: i32) int32
   var a: i64;
   var pa: *i64;
   var arr: []*i64;
-
-  func nested() void
-  {
-  }
-
 }

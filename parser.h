@@ -9,17 +9,21 @@ extern ast_pos pos;
 /* init global env */
 void ast_env_init (void);
 
-void ast_type_push (int cond, void *ptr);
-ast_type *ast_type_clear (void);
-#define GTYPE ast_type_clear ()
+extern ast_env *m_env;
+extern ast_env *m_parm;
+extern ast_type *m_type;
 
-void ast_parm_push (int cond, void *ptr);
-ast_parm *ast_parm_clear (void);
-#define GPARM ast_parm_clear ()
+#define GPARM m_parm
+#define GPARM_PUSH(COND, NAME, TYPE) ast_parm_push (&GPARM, COND, NAME, TYPE)
+void ast_parm_push (ast_env **env, int cond, char *name, ast_type *type);
 
-void ast_env_push (int cond, void *ptr);
-ast_env *ast_env_clear (void);
-#define GENV ast_env_clear ()
+#define GTYPE m_type
+#define GTYPE_PUSH(COND, PTR) ast_type_push (&GTYPE, COND, PTR)
+void ast_type_push (ast_type **type, int cond, void *ptr);
+
+#define GENV m_env
+#define GENV_PUSH(COND, PTR) ast_env_push (&GENV, COND, PTR)
+void ast_env_push (ast_env **env, int cond, void *ptr);
 
 ast_def *ast_def_new (int type, ast_pos pos, ...);
 ast_stm *ast_stm_new (int type, ast_pos pos, ...);

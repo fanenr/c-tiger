@@ -16,6 +16,8 @@ func                  { ADJ (); RET (FUNC   ); }
 else                  { ADJ (); RET (ELSE   ); }
 type                  { ADJ (); RET (TYPE   ); }
 while                 { ADJ (); RET (WHILE  ); }
+union                 { ADJ (); RET (UNION  ); }
+struct                { ADJ (); RET (STRUCT ); }
 
 {id}                  { ADJ (); RET (ID     ); }
 {num}                 { ADJ (); RET (NUM    ); }
