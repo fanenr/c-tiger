@@ -22,9 +22,6 @@ extern void yyerror(const char *);
        OR AND XOR LOR DOT PMEM LAND COMMA SEMI COLON
        LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE
 
-%nonassoc IF
-%nonassoc ELSE
-
 %right EQ
 %left LOR
 %left LAND

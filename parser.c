@@ -421,7 +421,7 @@ ast_env_init (void)
 }
 
 void
-yyerror (const char *pos)
+yyerror (const char *msg)
 {
-  error (m_pos, "%s", pos);
+  error ("error occured at %u:%u: %s\n", GPOS.ln, GPOS.ch, msg);
 }

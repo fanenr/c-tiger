@@ -3,7 +3,6 @@
 
 #include "ast.h"
 
-/* from lexer */
 extern ast_pos m_pos;
 #define GPOS m_pos
 
@@ -16,7 +15,5 @@ extern int handle (int tok);
 #define OTR() other ()
 #define ADJ() adjust ()
 #define RET(TOK) return handle (TOK)
-
-extern void error (ast_pos pos, const char *fmt, ...);
 
 #endif
