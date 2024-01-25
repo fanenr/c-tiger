@@ -2,8 +2,6 @@
 #include "util.h"
 #include "lexer.h"
 #include "tiger.y.h"
-#include <stdio.h>
-#include <stdarg.h>
 #include <stdlib.h>
 
 /* from flex */
@@ -28,7 +26,8 @@ nline (void)
 void
 other (void)
 {
-  error (m_pos, "use unkonwn type token %s\n", yytext);
+  error ("error occured at %u:%u: use unkonwn type token %s\n", m_pos.ln,
+         m_pos.ch, yytext);
 }
 
 int
@@ -54,17 +53,6 @@ handle (int tok)
       break;
     }
   return tok;
-}
-
-void
-error (ast_pos pos, const char *fmt, ...)
-{
-  va_list ap;
-  va_start (ap, fmt);
-  fprintf (stderr, "error occured at %u:%u: ", pos.ln, pos.ch);
-  vfprintf (stderr, fmt, ap);
-  va_end (ap);
-  exit (1);
 }
 
 int
