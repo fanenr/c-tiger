@@ -9,9 +9,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-ast_env *m_env;
-ast_env *m_parm;
-ast_type *m_type;
+ast_env prog;
 
 const char *base_type_name[] = {
   [AST_TYPE_VOID] = "void",     [AST_TYPE_BOOL] = "bool",
@@ -31,116 +29,33 @@ const unsigned base_type_size[] = {
   [AST_TYPE_FLOAT] = sizeof (float),     [AST_TYPE_DOUBLE] = sizeof (double),
 };
 
-void
-ast_type_push (ast_type **type, int cond, void *ptr)
-{
-  switch (cond)
-    {
-    /* type: ID */
-    case 1:
-      {
-        char *name = ptr;
-        ast_type *get = checked_alloc (sizeof (ast_type));
-        get->kind = AST_TYPE_USER;
-        get->size = 0;
-        for (int i = AST_TYPE_BASE_ST + 1; i <= AST_TYPE_BASE_ED - 1; i++)
-          if (strcmp (name, base_type_name[i]) == 0)
-            {
-              get->kind = i;
-              get->size = base_type_size[i];
-            }
-        *type = get;
-        break;
-      }
-    /* type: TIMES ID */
-    case 2:
-      {
-        ast_type *get = checked_alloc (sizeof (ast_type));
-        get->kind = AST_TYPE_POINTER;
-        get->size = sizeof (void *);
-        get->ref = *type;
-        *type = get;
-        break;
-      }
-    /* type: LBRACK RBRACK type */
-    case 3:
-      {
-        ast_type *get = checked_alloc (sizeof (ast_type));
-        get->kind = AST_TYPE_ARRAY;
-        get->size = sizeof (void *);
-        get->ref = *type;
-        *type = get;
-        break;
-      }
-    }
-}
+#define VEC_PUSH_BACK(VEC, PTR)                                               \
+  if (!vector_push_back (VEC, PTR))                                           \
+    error ("error: vector_push_back\n");
 
-void
-ast_parm_push (ast_env **env, int cond, char *name, ast_type *type)
+ast_env *
+ast_env_push (ast_env *env, int type, void *ptr)
 {
-  switch (cond)
-    {
-    /* parm: ID COLON type */
-    case 1:
-      {
-        ast_env *get = checked_alloc (sizeof (ast_env));
-        get->outer = GENV;
-        *env = get;
-        __attribute__ ((fallthrough));
-      }
-    /* parm: parm COMMA ID COLON type */
-    case 2:
-      {
-        ast_def *def = checked_alloc (AST_DEF_SIZE (var));
-        def->kind = AST_DEF_VAR;
-        def->pos = m_pos;
-        def->id = name;
-        ast_def_var *get = AST_DEF_GET (var, def);
-        get->type = type;
-        ast_env_push (env, 2, def);
-        break;
-      }
-    }
-}
+  if (env == NULL)
+    env = checked_alloc (sizeof (ast_env));
 
-void
-ast_env_push (ast_env **env, int cond, void *ptr)
-{
-  int kind = *(int *)ptr;
-  switch (cond)
+  switch (type)
     {
-    /* bloc: bloc_elem */
     case 1:
       {
-        ast_env *old = *env;
-        if (kind > AST_DEF_ST && kind < AST_DEF_ED)
-          old->defs.num--;
-        if (kind > AST_STM_ST && kind < AST_STM_ED)
-          old->stms.num--;
-        ast_env *new = checked_alloc (sizeof (ast_env));
-        new->outer = old;
-        *env = new;
-        __attribute__ ((fallthrough));
+        ast_def *def = ptr;
+        VEC_PUSH_BACK (&env->defs, def);
+        break;
       }
-    /* bloc: bloc bloc_elem */
     case 2:
       {
-        ast_env *now = *env;
-        if (kind > AST_DEF_ST && kind < AST_DEF_ED)
-          {
-            now->defs.list = checked_realloc (
-                now->defs.list, (now->defs.num + 1) * sizeof (ast_def *));
-            now->defs.list[now->defs.num++] = ptr;
-          }
-        if (kind > AST_STM_ST && kind < AST_STM_ED)
-          {
-            now->stms.list = checked_realloc (
-                now->stms.list, (now->stms.num + 1) * sizeof (ast_stm *));
-            now->stms.list[now->stms.num++] = ptr;
-          }
+        ast_stm *stm = ptr;
+        VEC_PUSH_BACK (&env->stms, stm);
         break;
       }
     }
+
+  return env;
 }
 
 ast_def *
@@ -395,8 +310,6 @@ ast_exp_new (int type, ast_pos pos, ...)
 void
 ast_env_init (void)
 {
-  m_env = checked_alloc (sizeof (ast_env));
-
   ast_def *def;
   ast_def_type *get;
   ast_pos origin = { 0 };
@@ -416,7 +329,7 @@ ast_env_init (void)
       get = AST_DEF_GET (type, def);
       get->type = type;
 
-      GENV_PUSH (2, def);
+      ast_env_push (&prog, AST_DEF_TYPE, def);
     }
 }
 
