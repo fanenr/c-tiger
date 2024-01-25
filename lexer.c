@@ -4,11 +4,10 @@
 #include "tiger.y.h"
 #include <stdlib.h>
 
-/* from flex */
 extern int yyleng;
 extern const char *yytext;
 
-ast_pos m_pos = { .ln = 1, .ch = 0 };
+ast_pos m_pos = { .ln = 1, .ch = 1 };
 
 void
 adjust (void)
@@ -20,7 +19,7 @@ void
 nline (void)
 {
   m_pos.ln++;
-  m_pos.ch = 0;
+  m_pos.ch = 1;
 }
 
 void
@@ -37,19 +36,23 @@ handle (int tok)
     {
     case ID:
     case STR:
-      yylval.ptr = checked_strdup (yytext);
+      yylval.val.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
+      yylval.val.ptr = checked_strdup (yytext);
       break;
 
     case NUM:
-      yylval.num = atoi (yytext);
+      yylval.val.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
+      yylval.val.num = atoi (yytext);
       break;
 
     case REAL:
-      yylval.real = atof (yytext);
+      yylval.val.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
+      yylval.val.real = atof (yytext);
       break;
 
     default:
-      yylval.pos = m_pos;
+      yylval.tok.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
+      yylval.tok.kind = tok;
       break;
     }
   return tok;

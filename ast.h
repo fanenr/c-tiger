@@ -1,6 +1,8 @@
 #ifndef AST_H
 #define AST_H
 
+#include "util.h"
+
 enum
 {
   AST_TYPE_ST,
@@ -91,6 +93,9 @@ enum
 };
 
 typedef struct ast_pos ast_pos;
+typedef struct ast_tok ast_tok;
+typedef struct ast_val ast_val;
+
 typedef struct ast_env ast_env;
 typedef struct ast_type ast_type;
 typedef struct ast_parm ast_parm;
@@ -120,22 +125,31 @@ struct ast_pos
   unsigned ch;
 };
 
+struct ast_tok
+{
+  ast_pos pos;
+  int kind;
+};
+
+struct ast_val
+{
+  ast_pos pos;
+  union
+  {
+    long num;
+    void *ptr;
+    double real;
+  };
+};
+
 /* ********************************************** */
 /*                    ast env                     */
 /* ********************************************** */
 
 struct ast_env
 {
-  struct
-  {
-    unsigned num;
-    ast_def **list;
-  } defs;
-  struct
-  {
-    unsigned num;
-    ast_stm **list;
-  } stms;
+  vector defs;
+  vector stms;
   ast_env *outer;
 };
 
@@ -145,7 +159,8 @@ struct ast_env
 
 struct ast_type
 {
-  unsigned kind;
+  int kind;
+  ast_pos pos;
   unsigned size;
   union
   {
@@ -153,7 +168,7 @@ struct ast_type
     ast_type *ref;
     /* union and struct */
     ast_env *mem;
-  };
+  } cmpd;
 };
 
 /* ********************************************** */
@@ -162,10 +177,10 @@ struct ast_type
 
 struct ast_def
 {
-  unsigned kind;
+  int kind;
   ast_pos pos;
   char *id;
-} __attribute__ ((aligned (sizeof (void *))));
+} __attribute__ ((aligned (sizeof (size_t))));
 
 struct ast_def_var
 {
@@ -180,9 +195,9 @@ struct ast_def_type
 
 struct ast_def_func
 {
-  ast_env *env;
   ast_type *type;
-  unsigned parm_num;
+  ast_env *parm;
+  ast_env *env;
 };
 
 /* ********************************************** */
@@ -191,9 +206,9 @@ struct ast_def_func
 
 struct ast_stm
 {
-  unsigned kind;
+  int kind;
   ast_pos pos;
-} __attribute__ ((aligned (sizeof (void *))));
+} __attribute__ ((aligned (sizeof (size_t))));
 
 struct ast_stm_assign
 {
@@ -220,9 +235,9 @@ struct ast_stm_if
 
 struct ast_exp
 {
-  unsigned kind;
+  int kind;
   ast_pos pos;
-} __attribute__ ((aligned (sizeof (void *))));
+} __attribute__ ((aligned (sizeof (size_t))));
 
 struct ast_exp_elem
 {
@@ -248,8 +263,7 @@ struct ast_exp_binary
 
 struct ast_exp_comma
 {
-  unsigned num;
-  ast_exp **list;
+  vector exps;
 };
 
 #endif
