@@ -4,7 +4,6 @@
 #include "ast.h"
 
 extern ast_pos m_pos;
-#define GPOS m_pos
 
 extern void nline (void);
 extern void other (void);

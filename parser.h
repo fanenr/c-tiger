@@ -3,12 +3,14 @@
 
 #include "ast.h"
 
+extern stack stac;
 extern ast_env prog;
 void ast_env_init (void);
 
 ast_env *ast_env_push (ast_env *env, void *ptr);
+ast_type *ast_type_push (ast_tok tok, ast_type *type);
+ast_exp *ast_comma_push (ast_exp *exp, ast_exp *next);
 ast_env *ast_parm_push (ast_env *env, ast_tok id, ast_type *type);
-ast_type *ast_type_push (ast_tok tok, void *ptr);
 
 ast_def *ast_def_new (int type, ...);
 ast_stm *ast_stm_new (int type, ...);
