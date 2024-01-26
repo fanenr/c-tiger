@@ -8,13 +8,12 @@ extern void yyerror(const char *);
 
 %union {
          void *ptr;
-         ast_val val;
          ast_tok tok;
        }
 
-%token <val> NUM
-%token <val> REAL
-%token <val> ID STR
+%token <tok> NUM
+%token <tok> REAL
+%token <tok> ID STR
 %token <tok>
        IF VAR ELSE TYPE FUNC WHILE UNION STRUCT RETURN
        EQ PLUS MINUS TIMES DIV MOD LT GT LEQ NEQ LTEQ GTEQ
@@ -52,29 +51,29 @@ extern void yyerror(const char *);
 %%
 prog
     : def
-      { $$ = ast_env_push (&prog, 1, $1); }
+      { $$ = ast_env_push (&prog, $1); }
     | prog def
-      { $$ = ast_env_push (&prog, 1, $1); }
+      { $$ = ast_env_push (&prog, $1); }
     ;
 
 bloc
     : def
-      { $$ = ast_bloc_push (0, 1, $1);  }
+      { $$ = ast_env_push (0, $1);  }
     | stm
-      { $$ = ast_bloc_push (0, 2, $1);  }
+      { $$ = ast_env_push (0, $1);  }
     | bloc def
-      { $$ = ast_bloc_push ($1, 1, $2); }
+      { $$ = ast_env_push ($1, $2); }
     | bloc stm
-      { $$ = ast_bloc_push ($1, 2, $2); }
+      { $$ = ast_env_push ($1, $2); }
     ;
 
 type
     : ID
-      { $$ = ast_type_push ($1, 1, 0);  }
+      { $$ = ast_type_push ($1, 0);  }
     | TIMES type
-      { $$ = ast_type_push ($1, 2, $2); }
+      { $$ = ast_type_push ($1, $2); }
     | LBRACK RBRACK type
-      { $$ = ast_type_push ($1, 3, $3); }
+      { $$ = ast_type_push ($1, $3); }
     ;
 
 def
@@ -95,11 +94,11 @@ def_var
 
 def_type
     : TYPE ID EQ type SEMI
-      { $$ = AST_DEF_NEW (TYPE, $1, 1, $2, $4); }
+      { $$ = AST_DEF_NEW (TYPE, $1, $2, $4); }
     | UNION ID LBRACE bloc RBRACE
-      { $$ = AST_DEF_NEW (TYPE, $1, 2, $2, $4); }
+      { $$ = AST_DEF_NEW (TYPE, $1, $2, $4); }
     | STRUCT ID LBRACE bloc RBRACE
-      { $$ = AST_DEF_NEW (TYPE, $1, 3, $2, $4); }
+      { $$ = AST_DEF_NEW (TYPE, $1, $2, $4); }
     ;
 
 def_func
@@ -115,9 +114,9 @@ def_func
 
 def_func_parm
     : ID COLON type
-      { GPARM_PUSH (1, $1, GTYPE); }
+      { $$ = ast_parm_push (0, $1, $3);  }
     | def_func_parm COMMA ID COLON type
-      { GPARM_PUSH (2, $3, GTYPE); }
+      { $$ = ast_parm_push ($1, $3, $4); }
     ;
 
 stm

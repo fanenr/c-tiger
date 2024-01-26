@@ -127,12 +127,7 @@ struct ast_pos
 
 struct ast_tok
 {
-  ast_pos pos;
   int kind;
-};
-
-struct ast_val
-{
   ast_pos pos;
   union
   {
