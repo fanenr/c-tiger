@@ -20,6 +20,7 @@ extern void yyerror(const char *);
        OR AND XOR LOR DOT PMEM LAND COMMA SEMI COLON
        LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE
 
+%left COMMA
 %right EQ
 %left LOR
 %left LAND
@@ -31,7 +32,7 @@ extern void yyerror(const char *);
 %left PLUS MINUS
 %left TIMES DIV MOD
 %right ADDR
-%right DADDR
+%right DREF
 %right UPLUS UMINUS
 %left PMEM
 %left DOT
@@ -39,7 +40,7 @@ extern void yyerror(const char *);
 %left LPAREN
 
 %type <ptr>
-      prog bloc type
+      bloc type
       def def_var def_type def_func def_func_parm
       stm stm_assign stm_return stm_while stm_if
       exp exp_elem exp_paren exp_unary exp_binary
@@ -51,9 +52,9 @@ extern void yyerror(const char *);
 %%
 prog
     : def
-      { $$ = ast_env_push (&prog, $1); }
+      { ast_env_push (&prog, $1); }
     | prog def
-      { $$ = ast_env_push (&prog, $1); }
+      { ast_env_push (&prog, $2); }
     ;
 
 bloc
@@ -186,10 +187,17 @@ exp_unary
       { $$ = AST_EXP_NEW (UN_UPLUS, $1, $2);  }
     | MINUS exp %prec UMINUS
       { $$ = AST_EXP_NEW (UN_UMINUS, $1, $2); }
-    | TIMES exp %prec DADDR
-      { $$ = AST_EXP_NEW (UN_DADDR, $1, $2);  }
     | AND exp %prec ADDR
       { $$ = AST_EXP_NEW (UN_ADDR, $1, $2);   }
+    | TIMES exp %prec DREF
+      { $$ = AST_EXP_NEW (UN_DREF, $1, $2);   }
+    ;
+
+exp_comma
+    : exp
+      { $$ = ast_comma_push (0, $1);  }
+    | exp_comma COMMA exp
+      { $$ = ast_comma_push ($1, $3); }
     ;
 
 exp_binary
@@ -216,7 +224,7 @@ exp_binary_bit
 
 exp_binary_mem
     : exp DOT exp
-      { $$ = AST_EXP_NEW (BIN_MEM, $1, $3);   }
+      { $$ = AST_EXP_NEW (BIN_DMEM, $1, $3);  }
     | exp PMEM exp
       { $$ = AST_EXP_NEW (BIN_PMEM, $1, $3);  }
     | exp LBRACK exp RBRACK
@@ -257,15 +265,8 @@ exp_binary_logic
 
 exp_binary_call
     : exp LPAREN RPAREN
-      { $$ = AST_EXP_NEW (BIN_CALL, $1, $3);  }
+      { $$ = AST_EXP_NEW (BIN_CALL, $1, 0);   }
     | exp LPAREN exp_comma RPAREN
       { $$ = AST_EXP_NEW (BIN_CALL, $1, $3);  }
-    ;
-
-exp_comma
-    : exp
-      { $$ = AST_EXP_NEW (COMMA, 0, $1);      }
-    | exp_comma COMMA exp
-      { $$ = AST_EXP_NEW (COMMA, $1, $3);     }
     ;
 %%

@@ -29,8 +29,9 @@ other (void)
 int
 handle (int tok)
 {
+  yylval.tok.pos.ch = m_pos.ch - yyleng;
+  yylval.tok.pos.ln = m_pos.ln;
   yylval.tok.kind = tok;
-  yylval.tok.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
   switch (tok)
     {
     case NUM:
@@ -41,7 +42,7 @@ handle (int tok)
       break;
     case ID:
     case STR:
-      yylval.tok.ptr = checked_strdup (yytext);
+      yylval.tok.str = checked_strdup (yytext);
       break;
     }
   return tok;

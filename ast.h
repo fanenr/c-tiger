@@ -55,7 +55,7 @@ enum
   AST_EXP_UN_ST,
   AST_EXP_UN_UPLUS,
   AST_EXP_UN_UMINUS,
-  AST_EXP_UN_DADDR,
+  AST_EXP_UN_DREF,
   AST_EXP_UN_ADDR,
   AST_EXP_UN_ED,
   AST_EXP_BIN_ST,
@@ -65,7 +65,7 @@ enum
   AST_EXP_BIN_XOR,
   AST_EXP_BIN_BIT_ED,
   AST_EXP_BIN_MEM_ST,
-  AST_EXP_BIN_MEM,
+  AST_EXP_BIN_DMEM,
   AST_EXP_BIN_PMEM,
   AST_EXP_BIN_INDEX,
   AST_EXP_BIN_MEM_ED,
@@ -108,11 +108,13 @@ typedef struct ast_def_func ast_def_func;
 typedef struct ast_stm ast_stm;
 typedef struct ast_stm_if ast_stm_if;
 typedef struct ast_stm_while ast_stm_while;
+typedef struct ast_stm_return ast_stm_return;
 typedef struct ast_stm_assign ast_stm_assign;
 
 typedef struct ast_exp ast_exp;
 typedef struct ast_exp_elem ast_exp_elem;
 typedef struct ast_exp_unary ast_exp_unary;
+typedef struct ast_exp_comma ast_exp_comma;
 typedef struct ast_exp_binary ast_exp_binary;
 
 /* ********************************************** */
@@ -132,7 +134,7 @@ struct ast_tok
   union
   {
     long num;
-    void *ptr;
+    char *str;
     double real;
   };
 };
@@ -159,11 +161,9 @@ struct ast_type
   unsigned size;
   union
   {
-    /* array and pointer */
     ast_type *ref;
-    /* union and struct */
     ast_env *mem;
-  } cmpd;
+  };
 };
 
 /* ********************************************** */
@@ -174,7 +174,7 @@ struct ast_def
 {
   int kind;
   ast_pos pos;
-  char *id;
+  ast_tok id;
 } __attribute__ ((aligned (sizeof (size_t))));
 
 struct ast_def_var
@@ -207,7 +207,12 @@ struct ast_stm
 
 struct ast_stm_assign
 {
-  ast_def *var;
+  ast_exp *obj;
+  ast_exp *exp;
+};
+
+struct ast_stm_return
+{
   ast_exp *exp;
 };
 
@@ -236,13 +241,7 @@ struct ast_exp
 
 struct ast_exp_elem
 {
-  union
-  {
-    long num;
-    double real;
-    ast_def *id;
-    char *string;
-  };
+  ast_tok elem;
 };
 
 struct ast_exp_unary
