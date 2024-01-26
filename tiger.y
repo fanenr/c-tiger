@@ -116,7 +116,7 @@ def_func_parm
     : ID COLON type
       { $$ = ast_parm_push (0, $1, $3);  }
     | def_func_parm COMMA ID COLON type
-      { $$ = ast_parm_push ($1, $3, $4); }
+      { $$ = ast_parm_push ($1, $3, $5); }
     ;
 
 stm

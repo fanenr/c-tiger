@@ -1,8 +1,5 @@
-#include "ast.h"
-#include "util.h"
 #include "lexer.h"
 #include "tiger.y.h"
-#include <stdlib.h>
 
 extern int yyleng;
 extern const char *yytext;
@@ -32,27 +29,19 @@ other (void)
 int
 handle (int tok)
 {
+  yylval.tok.kind = tok;
+  yylval.tok.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
   switch (tok)
     {
+    case NUM:
+      yylval.tok.num = checked_atol (yytext);
+      break;
+    case REAL:
+      yylval.tok.real = checked_atod (yytext);
+      break;
     case ID:
     case STR:
-      yylval.val.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
-      yylval.val.ptr = checked_strdup (yytext);
-      break;
-
-    case NUM:
-      yylval.val.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
-      yylval.val.num = atoi (yytext);
-      break;
-
-    case REAL:
-      yylval.val.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
-      yylval.val.real = atof (yytext);
-      break;
-
-    default:
-      yylval.tok.pos = (ast_pos){ .ln = m_pos.ln, .ch = m_pos.ch - yyleng };
-      yylval.tok.kind = tok;
+      yylval.tok.ptr = checked_strdup (yytext);
       break;
     }
   return tok;

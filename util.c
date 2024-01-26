@@ -15,18 +15,6 @@ error (const char *fmt, ...)
   exit (1);
 }
 
-char *
-checked_strdup (const char *src)
-{
-  size_t cap = strlen (src) + 1;
-  char *ret = malloc (cap);
-  if (ret == NULL)
-    error ("error: checked_strup:malloc\n");
-  if (memcpy (ret, src, cap) != ret)
-    error ("error: checked_strup:memcpy\n");
-  return ret;
-}
-
 void *
 checked_alloc (size_t size)
 {
@@ -44,6 +32,38 @@ checked_realloc (void *ptr, size_t size)
   void *ret = realloc (ptr, size);
   if (ret == NULL)
     error ("error: checked_realloc:realloc\n");
+  return ret;
+}
+
+char *
+checked_strdup (const char *src)
+{
+  size_t cap = strlen (src) + 1;
+  char *ret = malloc (cap);
+  if (ret == NULL)
+    error ("error: checked_strup:malloc\n");
+  if (memcpy (ret, src, cap) != ret)
+    error ("error: checked_strup:memcpy\n");
+  return ret;
+}
+
+long
+checked_atol (const char *src)
+{
+  char *end;
+  long ret = strtol (src, &end, 0);
+  if (end == src)
+    error ("error: checked_atol:strtol\n");
+  return ret;
+}
+
+double
+checked_atod (const char *src)
+{
+  char *end;
+  double ret = strtod (src, &end);
+  if (end == src)
+    error ("error: checked_atod:strtod\n");
   return ret;
 }
 
