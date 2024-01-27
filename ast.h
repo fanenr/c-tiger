@@ -147,7 +147,6 @@ struct ast_env
 {
   vector defs;
   vector stms;
-  ast_env *outer;
 };
 
 /* ********************************************** */

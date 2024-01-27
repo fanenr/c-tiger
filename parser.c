@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-stack stac;
 ast_env prog;
 
 const char *base_type_name[] = {
@@ -31,30 +30,13 @@ const unsigned base_type_size[] = {
   if (!vector_push_back (VEC, PTR))                                           \
     error ("error: vector_push_back\n");
 
-#define STACK_PUSH(STAC, PTR)                                                 \
-  if (!stack_push (STAC, PTR))                                                \
-    error ("error: stack_push\n");                                            \
 
-#define STACK_POP(STAC)                                                       \
-  if (!stack_pop (STAC))                                                      \
-    error ("error: stack_pop\n");                                             \
-
-#define STACK_TOP(STAC)                                                       \
-  ({                                                                          \
-    void *ptr = stack_top (STAC);                                             \
-    if (!ptr)                                                                 \
-      error ("error: stack_top\n");                                           \
-    ptr;                                                                      \
-  })
 
 ast_env *
 ast_env_push (ast_env *env, void *ptr)
 {
   if (!env)
-    {
-      env = checked_alloc (sizeof (ast_env));
-      STACK_PUSH (&stac, env);
-    }
+    env = checked_alloc (sizeof (ast_env));
 
   int type = *(int *)ptr;
   switch (type)
@@ -206,9 +188,6 @@ ast_def_new (int type, ...)
               /* set mem */
               ast_env *mem = ptr;
               type->mem = mem;
-              /* pop and set env */
-              STACK_POP (&stac);
-              mem->outer = STACK_TOP (&stac);
               ast_def_type *get = AST_DEF_GET (type, def);
               /* set type */
               get->type = type;
@@ -232,12 +211,6 @@ ast_def_new (int type, ...)
         get->type = type;
         /* set env */
         get->env = env;
-        if (env)
-          {
-            /* pop and set env */
-            STACK_POP (&stac);
-            env->outer = STACK_TOP (&stac);
-          }
         break;
       }
     }
@@ -300,9 +273,6 @@ ast_stm_new (int type, ...)
         get->exp = exp;
         /* set env */
         get->env = env;
-        /* pop and set env */
-        STACK_POP (&stac);
-        env->outer = STACK_TOP (&stac);
         break;
       }
     case AST_STM_IF_ST + 1 ... AST_STM_IF_ED - 1:
@@ -319,13 +289,6 @@ ast_stm_new (int type, ...)
         /* set env */
         get->then_env = env1;
         get->else_env = env2;
-        /* pop and set env */
-        if (env2)
-          STACK_POP (&stac);
-        STACK_POP (&stac);
-        if (env2)
-          env2->outer = STACK_TOP (&stac);
-        env1->outer = STACK_TOP (&stac);
         break;
       }
     }
@@ -418,8 +381,6 @@ ast_env_init (void)
 
       ast_env_push (&prog, def);
     }
-
-  STACK_PUSH (&stac, &prog);
 }
 
 void
