@@ -1,5 +1,7 @@
+#include "ast.h"
 #include "sema.h"
 #include "util.h"
+#include <string.h>
 
 stack stac;
 
@@ -28,6 +30,8 @@ sema_check (ast_env *env)
   vector *defs = &env->defs;
   for (size_t i = 0; i < defs->size; i++)
     {
+      ast_def *def = vector_get (defs, i);
+      sema_check_def (def, env);
     }
 
   vector *stms = &env->stms;
@@ -36,4 +40,29 @@ sema_check (ast_env *env)
     }
 
   STACK_POP (&stac);
+}
+
+void
+sema_check_def_id (ast_tok id, ast_env *env)
+{
+  vector *defs = &env->defs;
+  for (size_t i = 0; i < defs->size; i++)
+    {
+      ast_def *def = vector_get (defs, i);
+
+      if ((def->id.pos.ln > id.pos.ln)
+          || (def->id.pos.ln == id.pos.ln && def->id.pos.ch >= id.pos.ch))
+        return;
+
+      if (!strcmp (id.str, def->id.str))
+        error ("the identifier %s has been defined at %u:%u\n", id.str,
+               def->id.pos.ln, def->id.pos.ch);
+    }
+}
+
+void
+sema_check_def (ast_def *def, ast_env *env)
+{
+  ast_tok id = def->id;
+  sema_check_def_id (id, env);
 }
