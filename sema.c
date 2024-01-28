@@ -1,3 +1,8 @@
+#include "sema.h"
+#include "util.h"
+
+stack stac;
+
 #define STACK_PUSH(STAC, PTR)                                                 \
   if (!stack_push (STAC, PTR))                                                \
     error ("error: stack_push\n");
@@ -13,3 +18,22 @@
       error ("error: stack_top\n");                                           \
     ptr;                                                                      \
   })
+
+void
+sema_check (ast_env *env)
+{
+  env->outer = stac.vec.size ? STACK_TOP (&stac) : NULL;
+  STACK_PUSH (&stac, env);
+
+  vector *defs = &env->defs;
+  for (size_t i = 0; i < defs->size; i++)
+    {
+    }
+
+  vector *stms = &env->stms;
+  for (size_t i = 0; i < stms->size; i++)
+    {
+    }
+
+  STACK_POP (&stac);
+}

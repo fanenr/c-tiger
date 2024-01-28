@@ -1,7 +1,8 @@
 #include "ast.h"
+#include "util.h"
+#include "sema.h"
 #include "parser.h"
 #include "tiger.y.h"
-#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -17,22 +18,16 @@ void print (ast_env *env, int l);
 int
 main (int argc, char **argv)
 {
-  if (argc != 2)
-    {
-      fprintf (stderr, "usage: %s *.tig\n", argv[0]);
-      exit (1);
-    }
+  if (argc < 2)
+    error ("usage: %s *.tig\n", argv[0]);
 
   yyin = fopen (argv[1], "r");
   if (yyin == NULL)
-    {
-      fprintf (stderr, "open file %s failed\n", argv[1]);
-      exit (1);
-    }
+    error ("open file %s failed\n", argv[1]);
 
   ast_env_init ();
-
   yyparse ();
+  sema_check (&prog);
 
   printf ("prog\n");
   print (&prog, 1);
@@ -138,6 +133,6 @@ print (ast_env *env, int l)
 void
 print_wsp (int n)
 {
-  for (int i = 0; i < 4 * n; i++)
-    printf (" ");
+  for (int i = 0; i < n; i++)
+    printf ("    ");
 }
