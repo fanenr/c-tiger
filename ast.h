@@ -147,6 +147,7 @@ struct ast_env
 {
   vector defs;
   vector stms;
+  ast_env *outer;
 };
 
 /* ********************************************** */
@@ -236,6 +237,7 @@ struct ast_exp
 {
   int kind;
   ast_pos pos;
+  ast_type *type;
 } __attribute__ ((aligned (sizeof (size_t))));
 
 struct ast_exp_elem
