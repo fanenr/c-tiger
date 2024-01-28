@@ -30,8 +30,6 @@ const unsigned base_type_size[] = {
   if (!vector_push_back (VEC, PTR))                                           \
     error ("error: vector_push_back\n");
 
-
-
 ast_env *
 ast_env_push (ast_env *env, void *ptr)
 {
@@ -319,6 +317,7 @@ ast_exp_new (int type, ...)
         ast_tok tok = va_arg (ap, ast_tok);
         /* set pos */
         exp->pos = tok.pos;
+        /* exp->type */
         /* set elem */
         ast_exp_elem *get = AST_EXP_GET (elem, exp);
         get->elem = tok;
@@ -330,6 +329,7 @@ ast_exp_new (int type, ...)
         ast_exp *val = va_arg (ap, ast_exp *);
         /* set pos */
         exp->pos = tok.pos;
+        /* exp->type */
         /* set exp */
         ast_exp_unary *get = AST_EXP_GET (unary, exp);
         get->exp = val;
@@ -341,6 +341,7 @@ ast_exp_new (int type, ...)
         ast_exp *exp2 = va_arg (ap, ast_exp *);
         /* set pos */
         exp->pos = exp1->pos;
+        /* exp->type */
         /* set exps */
         ast_exp_binary *get = AST_EXP_GET (binary, exp);
         get->exp1 = exp1;

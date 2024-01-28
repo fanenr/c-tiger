@@ -3,7 +3,6 @@
 
 #include "ast.h"
 
-extern stack stac;
 extern ast_env prog;
 void ast_env_init (void);
 
