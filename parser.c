@@ -28,7 +28,7 @@ const unsigned base_type_size[] = {
 
 #define VEC_PUSH_BACK(VEC, PTR)                                               \
   if (!vector_push_back (VEC, PTR))                                           \
-    error ("error: vector_push_back\n");
+  error ("error: vector_push_back\n")
 
 ast_env *
 ast_env_push (ast_env *env, void *ptr)
@@ -85,7 +85,7 @@ ast_type_push (ast_tok tok, ast_type *type)
     {
     case ID:
       {
-        /* new->kind */
+        new->kind = AST_TYPE_USER;
         /* new->size */
         new->ref = (ast_type *)tok.str;
         break;
@@ -94,13 +94,6 @@ ast_type_push (ast_tok tok, ast_type *type)
       {
         new->kind = AST_TYPE_POINTER;
         new->size = sizeof (void *);
-        new->ref = type;
-        break;
-      }
-    case LBRACK:
-      {
-        new->kind = AST_TYPE_ARRAY;
-        /* new->size */
         new->ref = type;
         break;
       }
@@ -180,7 +173,7 @@ ast_def_new (int type, ...)
               def->id = id;
               ast_type *type = checked_alloc (sizeof (ast_type));
               type->kind
-                  = tok.kind == UNION ? AST_TYPE_UNION : AST_TYPE_STRUCT;
+                  = (tok.kind == UNION) ? AST_TYPE_UNION : AST_TYPE_STRUCT;
               type->pos = tok.pos;
               /* type->size */
               /* set mem */
