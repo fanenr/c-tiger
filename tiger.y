@@ -73,8 +73,6 @@ type
       { $$ = ast_type_push ($1, 0);  }
     | TIMES type
       { $$ = ast_type_push ($1, $2); }
-    | LBRACK RBRACK type
-      { $$ = ast_type_push ($1, $3); }
     ;
 
 def
