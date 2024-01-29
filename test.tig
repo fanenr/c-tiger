@@ -2,19 +2,18 @@
 type i32 = int8;
 
 union u {
-  var m32: i323;
+  type m_i32 = i32;
+  var m32: m_i32;
   var m64: *int64;
+  struct us {
+    type us_i32 = m_i32;
+    var um32: us_i32 = 1;
+  }
 }
 
 struct s {
   var m32: i32;
   var m64: **int64;
-  func set_m32(val: i32) void {
-    this->m32 = val;
-  }
-  func get_m32() i32 {
-    return this->m32;
-  }
 }
 
 func main(parm1: int8, parm2: i32) int32 {

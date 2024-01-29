@@ -83,7 +83,7 @@ ast_def *
 sema_seek_def (const char *name, ast_env *env)
 {
   vector *defs = &env->defs;
-  while (true)
+  for (;;)
     {
       for (size_t i = 0; i < defs->size; i++)
         {
@@ -91,9 +91,12 @@ sema_seek_def (const char *name, ast_env *env)
           if (!strcmp (name, def->id.str))
             return def;
         }
+
       if (!env->outer)
         return NULL;
-      defs = &env->outer->defs;
+
+      env = env->outer;
+      defs = &env->defs;
     }
 }
 
@@ -123,6 +126,37 @@ sema_check_type (ast_type *type, ast_env *env)
         sema_check_type (type->ref, env);
         break;
       }
+    case AST_TYPE_UNION:
+    case AST_TYPE_STRUCT:
+      {
+        ast_env *tenv = type->mem;
+        /* check stm */
+        vector *stms = &tenv->stms;
+        if (stms->size != 0)
+          {
+            ast_stm *stm = vector_get (stms, 0);
+            error ("statement can not be here %u:%u\n", stm->pos.ln,
+                   stm->pos.ch);
+          }
+        /* check def */
+        vector *defs = &tenv->defs;
+        for (size_t i = 0; i < defs->size; i++)
+          {
+            ast_def *def = vector_get (defs, i);
+            if (def->kind == AST_DEF_FUNC)
+              error ("function can not be here %u:%u\n", def->pos.ln,
+                     def->pos.ch);
+            if (def->kind == AST_DEF_VAR)
+              {
+                ast_def_var *get = AST_DEF_GET (var, def);
+                if (get->init)
+                  error ("expression can not be here %u:%u\n", get->init->pos.ln,
+                         get->init->pos.ch);
+              }
+          }
+        sema_check (tenv);
+        break;
+      }
     }
 }
 
@@ -136,6 +170,14 @@ sema_check_def (ast_def *def, ast_env *env)
     case AST_DEF_VAR:
       {
         ast_def_var *get = AST_DEF_GET (var, def);
+        sema_check_type (get->type, env);
+        if (get->init)
+          sema_check_exp (get->init, env);
+        break;
+      }
+    case AST_DEF_TYPE:
+      {
+        ast_def_type *get = AST_DEF_GET (type, def);
         sema_check_type (get->type, env);
         break;
       }
