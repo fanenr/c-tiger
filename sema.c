@@ -143,16 +143,16 @@ sema_check_type (ast_type *type, ast_env *env)
         for (size_t i = 0; i < defs->size; i++)
           {
             ast_def *def = vector_get (defs, i);
+            if (def->kind == AST_DEF_VAR)
+              {
+                ast_exp *exp = AST_DEF_GET (var, def)->init;
+                !exp ? 0
+                     : error ("expression can not be here %u:%u\n",
+                              exp->pos.ln, exp->pos.ch);
+              }
             if (def->kind == AST_DEF_FUNC)
               error ("function can not be here %u:%u\n", def->pos.ln,
                      def->pos.ch);
-            if (def->kind == AST_DEF_VAR)
-              {
-                ast_def_var *get = AST_DEF_GET (var, def);
-                if (get->init)
-                  error ("expression can not be here %u:%u\n", get->init->pos.ln,
-                         get->init->pos.ch);
-              }
           }
         sema_check (tenv);
         break;
@@ -179,6 +179,14 @@ sema_check_def (ast_def *def, ast_env *env)
       {
         ast_def_type *get = AST_DEF_GET (type, def);
         sema_check_type (get->type, env);
+        break;
+      }
+    case AST_DEF_FUNC:
+      {
+        ast_def_func *get = AST_DEF_GET (func, def);
+        sema_check (get->parm);
+        sema_check_type (get->type, env);
+        sema_check (get->env);
         break;
       }
     }
