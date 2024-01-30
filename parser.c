@@ -311,6 +311,7 @@ ast_exp_new (int type, ...)
         /* set pos */
         exp->pos = tok.pos;
         /* exp->type */
+        exp->type = checked_alloc (sizeof (ast_type));
         /* set elem */
         ast_exp_elem *get = AST_EXP_GET (elem, exp);
         get->elem = tok;
@@ -323,6 +324,7 @@ ast_exp_new (int type, ...)
         /* set pos */
         exp->pos = tok.pos;
         /* exp->type */
+        exp->type = checked_alloc (sizeof (ast_type));
         /* set exp */
         ast_exp_unary *get = AST_EXP_GET (unary, exp);
         get->exp = val;
@@ -335,6 +337,7 @@ ast_exp_new (int type, ...)
         /* set pos */
         exp->pos = exp1->pos;
         /* exp->type */
+        exp->type = checked_alloc (sizeof (ast_type));
         /* set exps */
         ast_exp_binary *get = AST_EXP_GET (binary, exp);
         get->exp1 = exp1;
