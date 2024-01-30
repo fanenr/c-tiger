@@ -7,7 +7,7 @@ union u {
   var m64: *int64;
   struct us {
     type us_i32 = m_i32;
-    var um32: us_i32 = 1;
+    var um32: us_i32;
   }
 }
 
@@ -20,4 +20,5 @@ func main(parm1: int8, parm2: i32) int32 {
   var b: s;
   var pb: *s = &s;
   var c: i32 = b.m32;
+  var d: i32 = pb->m32;
 }
