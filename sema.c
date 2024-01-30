@@ -74,8 +74,8 @@ sema_check_def_id (ast_tok id, ast_env *env)
         return;
 
       if (!strcmp (id.str, def->id.str))
-        error ("the identifier %s has been defined at %u:%u\n", id.str,
-               def->id.pos.ln, def->id.pos.ch);
+        error ("%s (%u:%u) has been defined\n", id.str, def->id.pos.ln,
+               def->id.pos.ch);
     }
 }
 
@@ -111,11 +111,14 @@ sema_check_type (ast_type *type, ast_env *env)
         ast_def *def = sema_seek_def (name, env);
         ast_def_type *get = AST_DEF_GET (type, def);
 
-        if (!def || def->kind != AST_DEF_TYPE
-            || sema_check_pos (get->type->pos, type->pos) >= 0)
-          error ("the type %s is undefined\n", name);
-        free (name);
+        if (!def || sema_check_pos (get->type->pos, type->pos) >= 0)
+          error ("%s (%u:%u) is undefined\n", name, type->pos.ln,
+                 type->pos.ch);
+        if (def->kind != AST_DEF_TYPE)
+          error ("%s (%u:%u) is not a type\n", name, type->pos.ln,
+                 type->pos.ch);
 
+        free (name);
         ast_pos pos = type->pos;
         *type = *get->type;
         type->pos = pos;
@@ -135,7 +138,7 @@ sema_check_type (ast_type *type, ast_env *env)
         if (stms->size != 0)
           {
             ast_stm *stm = vector_get (stms, 0);
-            error ("statement can not be here %u:%u\n", stm->pos.ln,
+            error ("statement (%u:%u) can not be here\n", stm->pos.ln,
                    stm->pos.ch);
           }
         /* check def */
@@ -146,12 +149,12 @@ sema_check_type (ast_type *type, ast_env *env)
             if (def->kind == AST_DEF_VAR)
               {
                 ast_exp *exp = AST_DEF_GET (var, def)->init;
-                !exp ? 0
-                     : error ("expression can not be here %u:%u\n",
-                              exp->pos.ln, exp->pos.ch);
+                exp ? error ("expression (%u:%u) can not be here\n",
+                             exp->pos.ln, exp->pos.ch)
+                    : 0;
               }
             if (def->kind == AST_DEF_FUNC)
-              error ("function can not be here %u:%u\n", def->pos.ln,
+              error ("function (%u:%u) can not be here\n", def->pos.ln,
                      def->pos.ch);
           }
         sema_check (tenv);
@@ -195,4 +198,36 @@ sema_check_def (ast_def *def, ast_env *env)
 void
 sema_check_exp (ast_exp *exp, ast_env *env)
 {
+  switch (exp->kind)
+    {
+    case AST_EXP_ELEM_ID:
+      {
+        ast_exp_elem *get = AST_EXP_GET (elem, exp);
+        ast_def *def = sema_seek_def (get->elem.str, env);
+        if (!def)
+          error ("%s (%u:%u) is undefined\n", get->elem.str, get->elem.pos.ln,
+                 get->elem.pos.ch);
+        if (def->kind != AST_DEF_VAR)
+          error ("%s (%u:%u) is not a varibale\n", get->elem.str,
+                 get->elem.pos.ln, get->elem.pos.ch);
+        exp->type = AST_DEF_GET (var, def)->type;
+        break;
+      }
+    case AST_EXP_ELEM_STR:
+      {
+        break;
+      }
+    case AST_EXP_ELEM_NUM:
+      {
+        ast_def *def = sema_seek_def ("int32", &prog);
+        exp->type = AST_DEF_GET (type, def)->type;
+        break;
+      }
+    case AST_EXP_ELEM_REAL:
+      {
+        ast_def *def = sema_seek_def ("double", &prog);
+        exp->type = AST_DEF_GET (type, def)->type;
+        break;
+      }
+    }
 }
