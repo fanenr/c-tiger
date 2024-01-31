@@ -195,6 +195,34 @@ sema_check_def (ast_def *def, ast_env *env)
     }
 }
 
+int
+sema_check_exp_lv (ast_exp *exp)
+{
+  switch (exp->kind)
+    {
+    case AST_EXP_ELEM_ID:
+    case AST_EXP_BIN_DMEM:
+    case AST_EXP_BIN_PMEM:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
+int
+sema_check_exp_num (ast_exp *exp)
+{
+  switch (exp->type->kind)
+    {
+    case AST_TYPE_INT8 ... AST_TYPE_INT64:
+    case AST_TYPE_UINT8 ... AST_TYPE_UINT64:
+    case AST_TYPE_FLOAT ... AST_TYPE_DOUBLE:
+      return 1;
+    default:
+      return 0;
+    }
+}
+
 void
 sema_check_exp (ast_exp *exp, ast_env *env)
 {
@@ -203,30 +231,70 @@ sema_check_exp (ast_exp *exp, ast_env *env)
     case AST_EXP_ELEM_ID:
       {
         ast_exp_elem *get = AST_EXP_GET (elem, exp);
-        ast_def *def = sema_seek_def (get->elem.str, env);
+        ast_tok tok = get->elem;
+        ast_def *def = sema_seek_def (tok.str, env);
         if (!def)
-          error ("%s (%u:%u) is undefined\n", get->elem.str, get->elem.pos.ln,
-                 get->elem.pos.ch);
+          error ("%s (%u:%u) is undefined\n", tok.str, tok.pos.ln, tok.pos.ch);
         if (def->kind != AST_DEF_VAR)
-          error ("%s (%u:%u) is not a varibale\n", get->elem.str,
-                 get->elem.pos.ln, get->elem.pos.ch);
+          error ("%s (%u:%u) is not a varibale\n", tok.str, tok.pos.ln,
+                 tok.pos.ch);
         exp->type = AST_DEF_GET (var, def)->type;
         break;
       }
+
     case AST_EXP_ELEM_STR:
       {
         break;
       }
+
     case AST_EXP_ELEM_NUM:
       {
         ast_def *def = sema_seek_def ("int32", &prog);
         exp->type = AST_DEF_GET (type, def)->type;
         break;
       }
+
     case AST_EXP_ELEM_REAL:
       {
         ast_def *def = sema_seek_def ("double", &prog);
         exp->type = AST_DEF_GET (type, def)->type;
+        break;
+      }
+
+    case AST_EXP_UN_UPLUS:
+    case AST_EXP_UN_UMINUS:
+      {
+        ast_exp *operand = AST_EXP_GET (unary, exp)->exp;
+        sema_check_exp (operand, env);
+        int kind = operand->type->kind;
+        if (!sema_check_exp_num (operand))
+          error ("%s (%u:%u) can only be used for numbers\n", "+-",
+                 exp->pos.ln, exp->pos.ch);
+        exp->type = operand->type;
+        break;
+      }
+
+    case AST_EXP_UN_DREF:
+      {
+        ast_exp *operand = AST_EXP_GET (unary, exp)->exp;
+        sema_check_exp (operand, env);
+        if (operand->type->kind != AST_TYPE_POINTER)
+          error ("%s (%u:%u) can only be used for pointer\n", "*", exp->pos.ln,
+                 exp->pos.ch);
+        exp->type = operand->type->ref;
+        break;
+      }
+
+    case AST_EXP_UN_ADDR:
+      {
+        ast_exp *operand = AST_EXP_GET (unary, exp)->exp;
+        sema_check_exp (operand, env);
+        if (!sema_check_exp_lv (operand))
+          error ("%s (%u:%u) can only be used for lvalue\n", "&", exp->pos.ln,
+                 exp->pos.ch);
+        exp->type->kind = AST_TYPE_POINTER;
+        exp->type->size = sizeof (void *);
+        exp->type->ref = operand->type;
         break;
       }
     }

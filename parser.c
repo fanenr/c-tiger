@@ -8,24 +8,6 @@
 
 ast_env prog;
 
-const char *base_type_name[] = {
-  [AST_TYPE_VOID] = "void",     [AST_TYPE_BOOL] = "bool",
-  [AST_TYPE_INT8] = "int8",     [AST_TYPE_INT16] = "int16",
-  [AST_TYPE_INT32] = "int32",   [AST_TYPE_INT64] = "int64",
-  [AST_TYPE_UINT8] = "uint8",   [AST_TYPE_UINT16] = "uint16",
-  [AST_TYPE_UINT32] = "uint32", [AST_TYPE_UINT64] = "uint64",
-  [AST_TYPE_FLOAT] = "float",   [AST_TYPE_DOUBLE] = "double",
-};
-
-const unsigned base_type_size[] = {
-  [AST_TYPE_VOID] = sizeof (void),       [AST_TYPE_BOOL] = sizeof (bool),
-  [AST_TYPE_INT8] = sizeof (int8_t),     [AST_TYPE_INT16] = sizeof (int16_t),
-  [AST_TYPE_INT32] = sizeof (int32_t),   [AST_TYPE_INT64] = sizeof (int64_t),
-  [AST_TYPE_UINT8] = sizeof (uint8_t),   [AST_TYPE_UINT16] = sizeof (uint16_t),
-  [AST_TYPE_UINT32] = sizeof (uint32_t), [AST_TYPE_UINT64] = sizeof (uint64_t),
-  [AST_TYPE_FLOAT] = sizeof (float),     [AST_TYPE_DOUBLE] = sizeof (double),
-};
-
 #define VEC_PUSH_BACK(VEC, PTR)                                               \
   if (!vector_push_back (VEC, PTR))                                           \
   error ("error: vector_push_back\n")
@@ -349,6 +331,24 @@ ast_exp_new (int type, ...)
   va_end (ap);
   return exp;
 }
+
+const char *base_type_name[] = {
+  [AST_TYPE_VOID] = "void",     [AST_TYPE_BOOL] = "bool",
+  [AST_TYPE_INT8] = "int8",     [AST_TYPE_INT16] = "int16",
+  [AST_TYPE_INT32] = "int32",   [AST_TYPE_INT64] = "int64",
+  [AST_TYPE_UINT8] = "uint8",   [AST_TYPE_UINT16] = "uint16",
+  [AST_TYPE_UINT32] = "uint32", [AST_TYPE_UINT64] = "uint64",
+  [AST_TYPE_FLOAT] = "float",   [AST_TYPE_DOUBLE] = "double",
+};
+
+const unsigned base_type_size[] = {
+  [AST_TYPE_VOID] = sizeof (void),       [AST_TYPE_BOOL] = sizeof (bool),
+  [AST_TYPE_INT8] = sizeof (int8_t),     [AST_TYPE_INT16] = sizeof (int16_t),
+  [AST_TYPE_INT32] = sizeof (int32_t),   [AST_TYPE_INT64] = sizeof (int64_t),
+  [AST_TYPE_UINT8] = sizeof (uint8_t),   [AST_TYPE_UINT16] = sizeof (uint16_t),
+  [AST_TYPE_UINT32] = sizeof (uint32_t), [AST_TYPE_UINT64] = sizeof (uint64_t),
+  [AST_TYPE_FLOAT] = sizeof (float),     [AST_TYPE_DOUBLE] = sizeof (double),
+};
 
 void
 ast_env_init (void)
