@@ -18,7 +18,8 @@ struct s {
 
 func main(parm1: int8, parm2: i32) int32 {
   var b: s;
-  var pb: *s = &s;
+  var pb: *s = &b;
   var c: i32 = b.m32;
-  var d: i32 = pb->m32;
+  var e: i32 = 1;
+  var d: i32 = -+e;
 }
