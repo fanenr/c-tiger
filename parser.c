@@ -155,7 +155,7 @@ ast_def_new (int type, ...)
               def->id = id;
               ast_type *type = checked_alloc (sizeof (ast_type));
               type->kind
-                  = (tok.kind == UNION) ? AST_TYPE_UNION : AST_TYPE_STRUCT;
+                  = tok.kind == UNION ? AST_TYPE_UNION : AST_TYPE_STRUCT;
               type->pos = tok.pos;
               /* type->size */
               /* set mem */

@@ -212,10 +212,10 @@ exp_binary
     ;
 
 exp_binary_bit
-    : exp AND exp
-      { $$ = AST_EXP_NEW (BIN_AND, $1, $3);   }
-    | exp OR exp
+    : exp OR exp
       { $$ = AST_EXP_NEW (BIN_OR, $1, $3);    }
+    | exp AND exp
+      { $$ = AST_EXP_NEW (BIN_AND, $1, $3);   }
     | exp XOR exp
       { $$ = AST_EXP_NEW (BIN_XOR, $1, $3);   }
     ;
