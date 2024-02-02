@@ -13,6 +13,7 @@ extern int yyparse (void);
 extern ast_env *m_env;
 
 void print_wsp (int n);
+void print_type (ast_type *type);
 void print (ast_env *env, int l);
 
 int
@@ -64,21 +65,27 @@ print (ast_env *env, int l)
           else
             {
               print_wsp (l);
-              printf ("type %s\n", def->id.str);
+              printf ("type %s: ", def->id.str);
+              print_type (type);
+              printf ("\n");
             }
         }
 
       if (def->kind == AST_DEF_VAR)
         {
           print_wsp (l);
-          printf ("var %s\n", def->id.str);
+          printf ("var %s: ", def->id.str);
+          print_type (AST_DEF_GET (var, def)->type);
+          printf ("\n");
         }
 
       if (def->kind == AST_DEF_FUNC)
         {
           ast_def_func *get = AST_DEF_GET (func, def);
           print_wsp (l);
-          printf ("func %s\n", def->id.str);
+          printf ("func %s: ", def->id.str);
+          print_type (get->type);
+          printf ("\n");
           print (get->env, l + 1);
         }
     }
@@ -127,6 +134,25 @@ print (ast_env *env, int l)
           print (get->then_env, l + 1);
           print (get->else_env, l + 1);
         }
+    }
+}
+
+void
+print_type (ast_type *type)
+{
+  switch (type->kind)
+    {
+    case AST_TYPE_BASE_ST + 1 ... AST_TYPE_BASE_ED - 1:
+      {
+        printf ("%s", base_type_name[type->kind]);
+        break;
+      }
+    case AST_TYPE_POINTER:
+      {
+        printf ("*");
+        print_type (type->ref);
+        break;
+      }
     }
 }
 
