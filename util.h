@@ -1,8 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 /* ********************************************** */
 /*                     error                      */
@@ -17,6 +17,7 @@ extern void error (const char *fmt, ...)
 
 extern void *checked_alloc (size_t size);
 extern void *checked_realloc (void *ptr, size_t size);
+
 extern long checked_atol (const char *src) __attribute__ ((nonnull (1)));
 extern double checked_atod (const char *src) __attribute__ ((nonnull (1)));
 extern char *checked_strdup (const char *src) __attribute__ ((nonnull (1)));

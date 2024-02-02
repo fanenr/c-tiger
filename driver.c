@@ -1,8 +1,8 @@
 #include "ast.h"
-#include "util.h"
-#include "sema.h"
 #include "parser.h"
+#include "sema.h"
 #include "tiger.y.h"
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 
