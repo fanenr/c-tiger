@@ -1,9 +1,9 @@
 #include "util.h"
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 void
 error (const char *fmt, ...)

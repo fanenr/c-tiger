@@ -1,10 +1,10 @@
-#include "ast.h"
-#include "util.h"
-#include "lexer.h"
 #include "parser.h"
+#include "ast.h"
+#include "lexer.h"
 #include "tiger.y.h"
-#include <stdint.h>
+#include "util.h"
 #include <stdarg.h>
+#include <stdint.h>
 
 ast_env prog;
 

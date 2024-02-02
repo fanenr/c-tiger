@@ -1,7 +1,7 @@
-#include "ast.h"
 #include "sema.h"
-#include "util.h"
+#include "ast.h"
 #include "parser.h"
+#include "util.h"
 #include <stdlib.h>
 #include <string.h>
 
