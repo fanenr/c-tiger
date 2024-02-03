@@ -94,12 +94,14 @@ sema_check_exp (ast_exp *exp, ast_env *env)
       {
         ast_exp_elem *get = AST_EXP_GET (elem, exp);
         ast_tok tok = get->elem;
+        ast_pos pos = tok.pos;
         ast_def *def = sema_seek_def (tok.str, env);
-        if (!def || sema_check_pos (def->pos, exp->pos) >= 0)
-          error ("%s (%u:%u) is undefined\n", tok.str, tok.pos.ln, tok.pos.ch);
+
+        if (!def || sema_pos_comp (def->pos, exp->pos) >= 0)
+          error ("%s (%u:%u) is undefined\n", tok.str, pos.ln, pos.ch);
         if (def->kind != AST_DEF_VAR)
-          error ("%s (%u:%u) is not a varibale\n", tok.str, tok.pos.ln,
-                 tok.pos.ch);
+          error ("%s (%u:%u) is not a varibale\n", tok.str, pos.ln, pos.ch);
+
         exp->type = AST_DEF_GET (var, def)->type;
         break;
       }
@@ -124,10 +126,11 @@ sema_check_exp (ast_exp *exp, ast_env *env)
       {
         ast_exp *operand = AST_EXP_GET (unary, exp)->exp;
         sema_check_exp (operand, env);
-        int kind = operand->type->kind;
+
         if (!sema_exp_is_num (operand))
           error ("%s (%u:%u) can only be used for numbers\n", "+-",
                  exp->pos.ln, exp->pos.ch);
+
         exp->type = operand->type;
         break;
       }
@@ -135,9 +138,11 @@ sema_check_exp (ast_exp *exp, ast_env *env)
       {
         ast_exp *operand = AST_EXP_GET (unary, exp)->exp;
         sema_check_exp (operand, env);
+
         if (operand->type->kind != AST_TYPE_POINTER)
           error ("%s (%u:%u) can only be used for pointer\n", "*", exp->pos.ln,
                  exp->pos.ch);
+
         exp->type = operand->type->ref;
         break;
       }
@@ -145,9 +150,11 @@ sema_check_exp (ast_exp *exp, ast_env *env)
       {
         ast_exp *operand = AST_EXP_GET (unary, exp)->exp;
         sema_check_exp (operand, env);
+
         if (!sema_exp_is_lv (operand))
           error ("%s (%u:%u) can only be used for lvalue\n", "&", exp->pos.ln,
                  exp->pos.ch);
+
         exp->type->kind = AST_TYPE_POINTER;
         exp->type->size = sizeof (void *);
         exp->type->ref = operand->type;
@@ -161,44 +168,41 @@ sema_check_exp (ast_exp *exp, ast_env *env)
         ast_exp *operand2 = AST_EXP_GET (binary, exp)->exp2;
         sema_check_exp (operand1, env);
         sema_check_exp (operand2, env);
+
+        const char *fmt = "%s (%u:%u) can only be used for integer\n";
         if (!sema_exp_is_int (operand1))
-          error ("%s (%u:%u) can only be used for integer\n", "|&^",
-                 operand1->pos.ln, exp->pos.ch);
+          error (fmt, "| & ^", operand1->pos.ln, exp->pos.ch);
         if (!sema_exp_is_int (operand2))
-          error ("%s (%u:%u) can only be used for integer\n", "|&^",
-                 operand2->pos.ln, exp->pos.ch);
+          error (fmt, "| & ^", operand2->pos.ln, exp->pos.ch);
+
         exp->type = operand1->type->kind > operand2->type->kind
                         ? operand1->type
                         : operand2->type;
         break;
       }
     case AST_EXP_BIN_DMEM:
-      {
-        break;
-      }
     case AST_EXP_BIN_PMEM:
       {
+        ast_exp *operand1 = AST_EXP_GET (binary, exp)->exp1;
+        ast_exp *operand2 = AST_EXP_GET (binary, exp)->exp2;
+        sema_check_exp (operand1, env);
+
+        ast_pos pos1 = operand1->pos;
+        ast_pos pos2 = operand2->pos;
+        const char *fmt1
+            = "%s (%u:%u) can only be used for struct and union\n";
+        const char *fmt2
+            = "%s (%u:%u) can only be used for struct and union pointer\n";
+        if (exp->kind == AST_EXP_BIN_DMEM)
+          if (!sema_exp_is_obj (operand1))
+            error (fmt1, ".", pos1.ln, pos1.ch);
+        if (exp->kind == AST_EXP_BIN_PMEM)
+          if (!sema_exp_is_pobj (operand1))
+            error (fmt2, "->", pos1.ln, pos1.ch);
+
         break;
       }
     }
-}
-
-int
-sema_check_pos (ast_pos p1, ast_pos p2)
-{
-  unsigned ln1 = p1.ln;
-  unsigned ch1 = p1.ch;
-  unsigned ln2 = p2.ln;
-  unsigned ch2 = p2.ch;
-  if (ln1 > ln2)
-    return 1;
-  if (ln1 < ln2)
-    return -1;
-  if (ch1 > ch2)
-    return 1;
-  if (ch1 < ch2)
-    return -1;
-  return 0;
 }
 
 void
@@ -208,7 +212,7 @@ sema_check_id (ast_tok id, ast_env *env)
   for (size_t i = 0; i < defs->size; i++)
     {
       ast_def *def = vector_get (defs, i);
-      if (sema_check_pos (def->id.pos, id.pos) >= 0)
+      if (sema_pos_comp (def->id.pos, id.pos) >= 0)
         return;
       if (!strcmp (id.str, def->id.str))
         error ("%s (%u:%u) has been defined\n", id.str, def->id.pos.ln,
@@ -227,7 +231,7 @@ sema_check_type (ast_type *type, ast_env *env)
         ast_def *def = sema_seek_def (name, env);
         ast_def_type *get = AST_DEF_GET (type, def);
 
-        if (!def || sema_check_pos (get->type->pos, type->pos) >= 0)
+        if (!def || sema_pos_comp (get->type->pos, type->pos) >= 0)
           error ("%s (%u:%u) is undefined\n", name, type->pos.ln,
                  type->pos.ch);
         if (def->kind != AST_DEF_TYPE)
@@ -314,6 +318,19 @@ sema_exp_is_lv (ast_exp *exp)
 }
 
 bool
+sema_exp_is_obj (ast_exp *exp)
+{
+  switch (exp->type->kind)
+    {
+    case AST_TYPE_UNION:
+    case AST_TYPE_STRUCT:
+      return true;
+    default:
+      return false;
+    }
+}
+
+bool
 sema_exp_is_num (ast_exp *exp)
 {
   if (sema_exp_is_int (exp) || sema_exp_is_real (exp))
@@ -345,4 +362,38 @@ sema_exp_is_real (ast_exp *exp)
     default:
       return false;
     }
+}
+
+bool
+sema_exp_is_pobj (ast_exp *exp)
+{
+  if (exp->type->kind != AST_TYPE_POINTER)
+    return false;
+
+  switch (exp->type->ref->kind)
+    {
+    case AST_TYPE_UNION:
+    case AST_TYPE_STRUCT:
+      return true;
+    default:
+      return false;
+    }
+}
+
+int
+sema_pos_comp (ast_pos p1, ast_pos p2)
+{
+  unsigned ln1 = p1.ln;
+  unsigned ch1 = p1.ch;
+  unsigned ln2 = p2.ln;
+  unsigned ch2 = p2.ch;
+  if (ln1 > ln2)
+    return 1;
+  if (ln1 < ln2)
+    return -1;
+  if (ch1 > ch2)
+    return 1;
+  if (ch1 < ch2)
+    return -1;
+  return 0;
 }

@@ -30,5 +30,12 @@ func main(parm1: int8, parm2: i32) int32
   var v3: *i32 = &v1;
   var v4: i32 = *v3;
 
+  var v5: i64 = v1 ^ v1;
   var v6: i32 = v4 | v1 ^ 2 & v2;
+
+  var v7: u;
+  var v8: s;
+  var v9: i32 = v7.m32;
+  var v10: i32 = v8.m32;
+
 }
