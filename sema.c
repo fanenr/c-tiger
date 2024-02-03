@@ -59,8 +59,13 @@ sema_check_def (ast_def *def, ast_env *env)
       {
         ast_def_var *get = AST_DEF_GET (var, def);
         sema_check_type (get->type, env);
+        if (get->type->kind == AST_TYPE_VOID)
+          error ("%s (%u:%u) can only be used for function\n", "void",
+                 get->type->pos.ln, get->type->pos.ch);
         if (get->init)
-          sema_check_exp (get->init, env);
+          {
+            sema_check_exp (get->init, env);
+          }
         break;
       }
     case AST_DEF_TYPE:
@@ -90,7 +95,7 @@ sema_check_exp (ast_exp *exp, ast_env *env)
         ast_exp_elem *get = AST_EXP_GET (elem, exp);
         ast_tok tok = get->elem;
         ast_def *def = sema_seek_def (tok.str, env);
-        if (!def)
+        if (!def || sema_check_pos (def->pos, exp->pos) >= 0)
           error ("%s (%u:%u) is undefined\n", tok.str, tok.pos.ln, tok.pos.ch);
         if (def->kind != AST_DEF_VAR)
           error ("%s (%u:%u) is not a varibale\n", tok.str, tok.pos.ln,
@@ -165,6 +170,14 @@ sema_check_exp (ast_exp *exp, ast_env *env)
         exp->type = operand1->type->kind > operand2->type->kind
                         ? operand1->type
                         : operand2->type;
+        break;
+      }
+    case AST_EXP_BIN_DMEM:
+      {
+        break;
+      }
+    case AST_EXP_BIN_PMEM:
+      {
         break;
       }
     }
