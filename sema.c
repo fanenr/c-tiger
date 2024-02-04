@@ -95,7 +95,7 @@ sema_check_exp (ast_exp *exp, ast_env *env)
         ast_exp_elem *get = AST_EXP_GET (elem, exp);
         ast_tok tok = get->elem;
         ast_pos pos = tok.pos;
-        ast_def *def = sema_seek_def (tok.str, env);
+        ast_def *def = sema_seek_def2 (tok.str, env);
 
         if (!def || sema_pos_comp (def->pos, exp->pos) >= 0)
           error ("%s (%u:%u) is undefined\n", tok.str, pos.ln, pos.ch);
@@ -111,13 +111,13 @@ sema_check_exp (ast_exp *exp, ast_env *env)
       }
     case AST_EXP_ELEM_NUM:
       {
-        ast_def *def = sema_seek_def ("int32", &prog);
+        ast_def *def = sema_seek_def2 ("int32", &prog);
         exp->type = AST_DEF_GET (type, def)->type;
         break;
       }
     case AST_EXP_ELEM_REAL:
       {
-        ast_def *def = sema_seek_def ("double", &prog);
+        ast_def *def = sema_seek_def2 ("double", &prog);
         exp->type = AST_DEF_GET (type, def)->type;
         break;
       }
@@ -194,11 +194,39 @@ sema_check_exp (ast_exp *exp, ast_env *env)
         const char *fmt2
             = "%s (%u:%u) can only be used for struct and union pointer\n";
         if (exp->kind == AST_EXP_BIN_DMEM)
-          if (!sema_exp_is_obj (operand1))
-            error (fmt1, ".", pos1.ln, pos1.ch);
+          {
+            if (!sema_exp_is_obj (operand1))
+              error (fmt1, ".", pos1.ln, pos1.ch);
+            if (operand2->kind != AST_EXP_ELEM_ID)
+              error ("%s (%u:%u) need a member name\n", ".", pos2.ln, pos2.ch);
+
+            ast_tok mname = AST_EXP_GET (elem, operand2)->elem;
+            ast_def *mem = sema_seek_def1 (mname.str, operand1->type->mem);
+            if (!mem)
+              error ("%s (%u:%u) is undefined\n", mname.str, pos2.ln, pos2.ch);
+            if (mem->kind != AST_DEF_VAR)
+              error ("%s (%u:%u) is not a variable member\n", mname.str,
+                     pos2.ln, pos2.ch);
+            exp->type = AST_DEF_GET (var, mem)->type;
+          }
         if (exp->kind == AST_EXP_BIN_PMEM)
-          if (!sema_exp_is_pobj (operand1))
-            error (fmt2, "->", pos1.ln, pos1.ch);
+          {
+            if (!sema_exp_is_pobj (operand1))
+              error (fmt2, "->", pos1.ln, pos1.ch);
+            if (operand2->kind != AST_EXP_ELEM_ID)
+              error ("%s (%u:%u) need a member name\n", "->", pos2.ln,
+                     pos2.ch);
+
+            ast_tok mname = AST_EXP_GET (elem, operand2)->elem;
+            ast_def *mem
+                = sema_seek_def1 (mname.str, operand1->type->ref->mem);
+            if (!mem)
+              error ("%s (%u:%u) is undefined\n", mname.str, pos2.ln, pos2.ch);
+            if (mem->kind != AST_DEF_VAR)
+              error ("%s (%u:%u) is not a variable member\n", mname.str,
+                     pos2.ln, pos2.ch);
+            exp->type = AST_DEF_GET (var, mem)->type;
+          }
 
         break;
       }
@@ -228,7 +256,7 @@ sema_check_type (ast_type *type, ast_env *env)
     case AST_TYPE_USER:
       {
         char *name = (char *)type->ref;
-        ast_def *def = sema_seek_def (name, env);
+        ast_def *def = sema_seek_def2 (name, env);
         ast_def_type *get = AST_DEF_GET (type, def);
 
         if (!def || sema_pos_comp (get->type->pos, type->pos) >= 0)
@@ -281,25 +309,6 @@ sema_check_type (ast_type *type, ast_env *env)
         sema_check (tenv);
         break;
       }
-    }
-}
-
-ast_def *
-sema_seek_def (const char *name, ast_env *env)
-{
-  vector *defs = &env->defs;
-  for (;;)
-    {
-      for (size_t i = 0; i < defs->size; i++)
-        {
-          ast_def *def = vector_get (defs, i);
-          if (!strcmp (name, def->id.str))
-            return def;
-        }
-      if (!env->outer)
-        return NULL;
-      env = env->outer;
-      defs = &env->defs;
     }
 }
 
@@ -396,4 +405,34 @@ sema_pos_comp (ast_pos p1, ast_pos p2)
   if (ch1 < ch2)
     return -1;
   return 0;
+}
+
+ast_def *
+sema_seek_def1 (const char *name, ast_env *env)
+{
+  if (!env)
+    return NULL;
+
+  vector *defs = &env->defs;
+  for (size_t i = 0; i < defs->size; i++)
+    {
+      ast_def *def = vector_get (defs, i);
+      if (!strcmp (name, def->id.str))
+        return def;
+    }
+
+  return NULL;
+}
+
+ast_def *
+sema_seek_def2 (const char *name, ast_env *env)
+{
+  while (env)
+    {
+      ast_def *def = sema_seek_def1 (name, env);
+      if (def)
+        return def;
+      env = env->outer;
+    }
+  return NULL;
 }

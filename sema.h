@@ -19,7 +19,8 @@ extern bool sema_exp_is_int (ast_exp *exp);
 extern bool sema_exp_is_real (ast_exp *exp);
 extern bool sema_exp_is_pobj (ast_exp *exp);
 
-extern ast_def *sema_seek_def (const char *name, ast_env *env);
 extern int sema_pos_comp (ast_pos p1, ast_pos p2);
+extern ast_def *sema_seek_def1 (const char *name, ast_env *env);
+extern ast_def *sema_seek_def2 (const char *name, ast_env *env);
 
 #endif
