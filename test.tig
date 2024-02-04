@@ -37,5 +37,4 @@ func main(parm1: int8, parm2: i32) int32
   var v8: s;
   var v9: i32 = v7.m32;
   var v10: i32 = v8.m32;
-
 }
