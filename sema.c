@@ -53,6 +53,7 @@ sema_check_def (ast_def *def, ast_env *env)
 {
   ast_tok id = def->id;
   sema_check_id (id, env);
+
   switch (def->kind)
     {
     case AST_DEF_VAR:
@@ -60,7 +61,7 @@ sema_check_def (ast_def *def, ast_env *env)
         ast_def_var *get = AST_DEF_GET (var, def);
         sema_check_type (get->type, env);
         if (get->type->kind == AST_TYPE_VOID)
-          error ("%s (%u:%u) can only be used for function\n", "void",
+          error ("%s (%u:%u) can not be variable type\n", "void",
                  get->type->pos.ln, get->type->pos.ch);
         break;
       }
@@ -176,6 +177,31 @@ sema_check_exp (ast_exp *exp, ast_env *env)
         break;
       }
     case AST_EXP_BIN_DMEM:
+      {
+        ast_exp *operand1 = AST_EXP_GET (binary, exp)->exp1;
+        ast_exp *operand2 = AST_EXP_GET (binary, exp)->exp2;
+        sema_check_exp (operand1, env);
+
+        ast_pos pos1 = operand1->pos;
+        ast_pos pos2 = operand2->pos;
+        if (!sema_exp_is_obj (operand1))
+          error ("%s (%u:%u) can only be used for struct and union object\n",
+                 ".", pos1.ln, pos1.ch);
+        if (operand2->kind != AST_EXP_ELEM_ID)
+          error ("%s (%u:%u) need a member name\n", ".", pos2.ln, pos2.ch);
+
+        ast_tok mname = AST_EXP_GET (elem, operand2)->elem;
+        ast_def *mem = sema_seek_def1 (mname.str, operand1->type->mem);
+        if (!mem)
+          error ("%s (%u:%u) is a undefined member\n", mname.str, pos2.ln,
+                 pos2.ch);
+        if (mem->kind != AST_DEF_VAR)
+          error ("%s (%u:%u) is not a variable member\n", mname.str, pos2.ln,
+                 pos2.ch);
+
+        exp->type = AST_DEF_GET (var, mem)->type;
+        break;
+      }
     case AST_EXP_BIN_PMEM:
       {
         ast_exp *operand1 = AST_EXP_GET (binary, exp)->exp1;
@@ -184,45 +210,43 @@ sema_check_exp (ast_exp *exp, ast_env *env)
 
         ast_pos pos1 = operand1->pos;
         ast_pos pos2 = operand2->pos;
-        const char *fmt1
-            = "%s (%u:%u) can only be used for struct and union\n";
-        const char *fmt2
-            = "%s (%u:%u) can only be used for struct and union pointer\n";
-        if (exp->kind == AST_EXP_BIN_DMEM)
-          {
-            if (!sema_exp_is_obj (operand1))
-              error (fmt1, ".", pos1.ln, pos1.ch);
-            if (operand2->kind != AST_EXP_ELEM_ID)
-              error ("%s (%u:%u) need a member name\n", ".", pos2.ln, pos2.ch);
+        if (!sema_exp_is_pobj (operand1))
+          error ("%s (%u:%u) can only be used for struct and union pointer\n",
+                 "->", pos1.ln, pos1.ch);
+        if (operand2->kind != AST_EXP_ELEM_ID)
+          error ("%s (%u:%u) need a member name\n", "->", pos2.ln, pos2.ch);
 
-            ast_tok mname = AST_EXP_GET (elem, operand2)->elem;
-            ast_def *mem = sema_seek_def1 (mname.str, operand1->type->mem);
-            if (!mem)
-              error ("%s (%u:%u) is undefined\n", mname.str, pos2.ln, pos2.ch);
-            if (mem->kind != AST_DEF_VAR)
-              error ("%s (%u:%u) is not a variable member\n", mname.str,
-                     pos2.ln, pos2.ch);
-            exp->type = AST_DEF_GET (var, mem)->type;
-          }
-        if (exp->kind == AST_EXP_BIN_PMEM)
-          {
-            if (!sema_exp_is_pobj (operand1))
-              error (fmt2, "->", pos1.ln, pos1.ch);
-            if (operand2->kind != AST_EXP_ELEM_ID)
-              error ("%s (%u:%u) need a member name\n", "->", pos2.ln,
-                     pos2.ch);
+        ast_tok mname = AST_EXP_GET (elem, operand2)->elem;
+        ast_def *mem = sema_seek_def1 (mname.str, operand1->type->ref->mem);
+        if (!mem)
+          error ("%s (%u:%u) is a undefined member\n", mname.str, pos2.ln,
+                 pos2.ch);
+        if (mem->kind != AST_DEF_VAR)
+          error ("%s (%u:%u) is not a variable member\n", mname.str, pos2.ln,
+                 pos2.ch);
 
-            ast_tok mname = AST_EXP_GET (elem, operand2)->elem;
-            ast_def *mem
-                = sema_seek_def1 (mname.str, operand1->type->ref->mem);
-            if (!mem)
-              error ("%s (%u:%u) is undefined\n", mname.str, pos2.ln, pos2.ch);
-            if (mem->kind != AST_DEF_VAR)
-              error ("%s (%u:%u) is not a variable member\n", mname.str,
-                     pos2.ln, pos2.ch);
-            exp->type = AST_DEF_GET (var, mem)->type;
-          }
+        exp->type = AST_DEF_GET (var, mem)->type;
+        break;
+      }
+    case AST_EXP_BIN_INDEX:
+      {
+        ast_exp *operand1 = AST_EXP_GET (binary, exp)->exp1;
+        ast_exp *operand2 = AST_EXP_GET (binary, exp)->exp2;
+        sema_check_exp (operand1, env);
 
+        ast_pos pos1 = operand1->pos;
+        ast_pos pos2 = operand2->pos;
+        if (operand1->type->kind != AST_TYPE_POINTER)
+          error ("%s (%u:%u) can only be used for pointer\n", "[]", pos1.ln,
+                 pos1.ch);
+        if (operand1->type->ref->kind == AST_TYPE_VOID)
+          error ("%s (%u:%u) can not be used for void pointer\n", "[]",
+                 pos1.ln, pos1.ch);
+        if (!sema_exp_is_int (operand2))
+          error ("%s (%u:%u) need an integer value as its offset\n", "[]",
+                 pos2.ln, pos2.ch);
+
+        exp->type = operand1->type->ref;
         break;
       }
     }
@@ -248,7 +272,7 @@ sema_check_type (ast_type *type, ast_env *env)
 {
   switch (type->kind)
     {
-    case AST_TYPE_USER:
+    case AST_TYPE_UNDEF:
       {
         char *name = (char *)type->ref;
         ast_def *def = sema_seek_def2 (name, env);
@@ -260,11 +284,11 @@ sema_check_type (ast_type *type, ast_env *env)
         if (def->kind != AST_DEF_TYPE)
           error ("%s (%u:%u) is not a type\n", name, type->pos.ln,
                  type->pos.ch);
-
         free (name);
-        ast_pos pos = type->pos;
-        *type = *get->type;
-        type->pos = pos;
+
+        type->kind = get->type->kind;
+        type->size = get->type->size;
+        type->ref = get->type->ref;
         break;
       }
     case AST_TYPE_POINTER:
@@ -284,7 +308,6 @@ sema_check_type (ast_type *type, ast_env *env)
             error ("statement (%u:%u) can not be here\n", stm->pos.ln,
                    stm->pos.ch);
           }
-
         vector *defs = &tenv->defs;
         for (size_t i = 0; i < defs->size; i++)
           {
@@ -295,6 +318,25 @@ sema_check_type (ast_type *type, ast_env *env)
           }
 
         sema_check (tenv);
+
+        /* set size */
+        unsigned size = 0;
+        if (type->kind == AST_TYPE_UNION)
+          for (size_t i = 0; i < tenv->defs.size; i++)
+            {
+              ast_def *def = vector_get (&tenv->defs, i);
+              unsigned msize = AST_DEF_GET (type, def)->type->size;
+              if (def->kind == AST_DEF_VAR && msize > size)
+                size = msize;
+            }
+        else
+          for (size_t i = 0; i < tenv->defs.size; i++)
+            {
+              ast_def *def = vector_get (&tenv->defs, i);
+              if (def->kind == AST_DEF_VAR)
+                size += AST_DEF_GET (type, def)->type->size;
+            }
+        type->size = size;
         break;
       }
     }
