@@ -68,7 +68,7 @@ ast_type_push (ast_tok tok, ast_type *type)
     {
     case ID:
       {
-        new->kind = AST_TYPE_USER;
+        new->kind = AST_TYPE_UNDEF;
         /* new->size */
         new->ref = (ast_type *)tok.str;
         break;
@@ -151,15 +151,17 @@ ast_def_new (int type, ...)
             {
               /* set id */
               def->id = id;
+              ast_def_type *get = AST_DEF_GET (type, def);
               ast_type *type = checked_alloc (sizeof (ast_type));
+              /* set kind */
               type->kind
                   = tok.kind == UNION ? AST_TYPE_UNION : AST_TYPE_STRUCT;
+              /* set pos */
               type->pos = tok.pos;
               /* type->size */
               /* set mem */
               ast_env *mem = ptr;
               type->mem = mem;
-              ast_def_type *get = AST_DEF_GET (type, def);
               /* set type */
               get->type = type;
               break;
