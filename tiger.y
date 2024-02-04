@@ -86,9 +86,7 @@ def
 
 def_var
     : VAR ID COLON type SEMI
-      { $$ = AST_DEF_NEW (VAR, $1, $2, $4, 0);  }
-    | VAR ID COLON type EQ exp SEMI
-      { $$ = AST_DEF_NEW (VAR, $1, $2, $4, $6); }
+      { $$ = AST_DEF_NEW (VAR, $1, $2, $4);  }
     ;
 
 def_type

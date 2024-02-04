@@ -177,7 +177,6 @@ struct ast_def
 struct ast_def_var
 {
   ast_type *type;
-  ast_exp *init;
 };
 
 struct ast_def_type
@@ -188,7 +187,7 @@ struct ast_def_type
 struct ast_def_func
 {
   ast_type *type;
-  ast_env *parm;
+  unsigned parm;
   ast_env *env;
 };
 
