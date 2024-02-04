@@ -5,6 +5,7 @@
 #include "util.h"
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 ast_env prog;
 
@@ -122,14 +123,11 @@ ast_def_new (int type, ...)
       {
         ast_tok id = va_arg (ap, ast_tok);
         ast_type *type = va_arg (ap, ast_type *);
-        ast_exp *exp = va_arg (ap, ast_exp *);
         /* set id */
         def->id = id;
         ast_def_var *get = AST_DEF_GET (var, def);
         /* set type */
         get->type = type;
-        /* set init */
-        get->init = exp;
         break;
       }
     case AST_DEF_TYPE:
@@ -179,11 +177,20 @@ ast_def_new (int type, ...)
         def->id = id;
         ast_def_func *get = AST_DEF_GET (func, def);
         /* set parm */
-        get->parm = parm;
+        get->parm = parm ? parm->defs.size : 0;
+        if (!parm)
+          parm = checked_alloc (sizeof (ast_env));
         /* set type */
         get->type = type;
         /* set env */
-        get->env = env;
+        if (env)
+          {
+            parm->stms = env->stms;
+            for (size_t i = 0; i < env->defs.size; i++)
+              VEC_PUSH_BACK (&parm->defs, vector_get (&env->defs, i));
+            free (env);
+          }
+        get->env = parm;
         break;
       }
     }

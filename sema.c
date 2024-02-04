@@ -62,10 +62,6 @@ sema_check_def (ast_def *def, ast_env *env)
         if (get->type->kind == AST_TYPE_VOID)
           error ("%s (%u:%u) can only be used for function\n", "void",
                  get->type->pos.ln, get->type->pos.ch);
-        if (get->init)
-          {
-            sema_check_exp (get->init, env);
-          }
         break;
       }
     case AST_DEF_TYPE:
@@ -77,7 +73,6 @@ sema_check_def (ast_def *def, ast_env *env)
     case AST_DEF_FUNC:
       {
         ast_def_func *get = AST_DEF_GET (func, def);
-        sema_check (get->parm);
         sema_check_type (get->type, env);
         sema_check (get->env);
         break;
@@ -294,13 +289,6 @@ sema_check_type (ast_type *type, ast_env *env)
         for (size_t i = 0; i < defs->size; i++)
           {
             ast_def *def = vector_get (defs, i);
-            if (def->kind == AST_DEF_VAR)
-              {
-                ast_exp *exp = AST_DEF_GET (var, def)->init;
-                exp ? error ("expression (%u:%u) can not be here\n",
-                             exp->pos.ln, exp->pos.ch)
-                    : 0;
-              }
             if (def->kind == AST_DEF_FUNC)
               error ("function (%u:%u) can not be here\n", def->pos.ln,
                      def->pos.ch);
