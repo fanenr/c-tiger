@@ -1,3 +1,4 @@
+#include "ast.h"
 #include "parser.h"
 #include "sema.h"
 #include "tiger.y.h"
@@ -143,6 +144,16 @@ print_type (ast_type *type)
     case AST_TYPE_BASE_ST + 1 ... AST_TYPE_BASE_ED - 1:
       {
         printf ("%s", base_type_name[type->kind]);
+        break;
+      }
+    case AST_TYPE_UNION:
+      {
+        printf ("union");
+        break;
+      }
+    case AST_TYPE_STRUCT:
+      {
+        printf ("struct");
         break;
       }
     case AST_TYPE_POINTER:
