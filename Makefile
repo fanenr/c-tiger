@@ -1,32 +1,33 @@
-tiger: driver.o sema.o parser.o lexer.o tiger.y.o tiger.l.o util.o
-	gcc -g -o $@ $^
+LDFLAGS = -g
+NOWARN  = -Wno-unused-variable -Wno-unused-function
+CFLAGS  = -Wall -Wextra $(NOWARN) -ggdb3 -std=gnu11
 
-driver.o: driver.c ast.h util.h parser.h lexer.h tiger.y.h
-	gcc -g -c $<
+src := util.c sema.c lexer.c parser.c driver.c 
+src += tiger.l.c tiger.y.c
+obj := $(src:%.c=%.o)
 
-sema.o: sema.c sema.h ast.h util.h parser.h lexer.h tiger.y.h
-	gcc -g -c $<
+.PHONY: all
+all: tiger
 
-parser.o: parser.c ast.h util.h parser.h lexer.h tiger.y.h
-	gcc -g -c $<
+tiger: $(obj)
+	gcc $(LDFLAGS) -o $@ $^ 
 
-lexer.o: lexer.c ast.h util.h lexer.h tiger.y.h
-	gcc -g -c $<
+include deps.mk
 
-util.o: util.c util.h
-	gcc -g -c $<
-
-tiger.y.o: tiger.y.c ast.h util.h parser.h lexer.h tiger.y.h
-	gcc -g -c $<
-
-tiger.y.c tiger.y.h: tiger.y
-	bison -v --header=$<.h -o $<.c $<
-
-tiger.l.o: tiger.l.c ast.h util.h parser.h lexer.h tiger.y.h
-	gcc -g -c $<
+$(obj): %.o: %.c
+	gcc $(CFLAGS) -c $<
 
 tiger.l.c: tiger.l
 	flex -o $@ $<
 
+tiger.y.c tiger.y.h: tiger.y
+	bison -v --header=$<.h -o $<.c $<
+
+.PHONY: json
+json:
+	make clean
+	bear -- make
+
+.PHONY: clean
 clean:
 	rm -f *.o *.l.c *.y.h *.y.c *.y.output tiger
