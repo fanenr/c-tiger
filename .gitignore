@@ -1,3 +1,5 @@
+.cache/
+
 test
 lexer
 parser
@@ -7,4 +9,6 @@ tiger
 *.l.c
 *.y.h
 *.y.c
+
 *.y.output
+compile_commands.json

@@ -1,7 +1,5 @@
 #include "sema.h"
-#include "ast.h"
 #include "parser.h"
-#include "util.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -320,7 +318,7 @@ sema_check_type (ast_type *type, ast_env *env)
         sema_check (tenv);
 
         /* set size */
-        unsigned size = 0;
+        unsigned size = 1;
         if (type->kind == AST_TYPE_UNION)
           for (size_t i = 0; i < tenv->defs.size; i++)
             {

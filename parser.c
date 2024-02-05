@@ -1,8 +1,6 @@
 #include "parser.h"
-#include "ast.h"
 #include "lexer.h"
 #include "tiger.y.h"
-#include "util.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
