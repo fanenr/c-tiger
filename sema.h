@@ -7,6 +7,7 @@
 extern void sema_check (ast_env *env);
 
 extern void sema_check_def (ast_def *def, ast_env *env);
+extern void sema_check_stm (ast_stm *stm, ast_env *env);
 extern void sema_check_exp (ast_exp *exp, ast_env *env);
 
 extern void sema_check_id (ast_tok id, ast_env *env);

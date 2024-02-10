@@ -40,4 +40,6 @@ func main(parm1: int8, parm2: i32) int32
   
   i1 = v7.m32;
   i2 = v8.m32;
+
+  i1 = i1 / 3 * i2;
 }
