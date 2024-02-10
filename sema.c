@@ -1,5 +1,7 @@
 #include "sema.h"
+#include "ast.h"
 #include "parser.h"
+#include "util.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +43,8 @@ sema_check (ast_env *env)
   vector *stms = &env->stms;
   for (size_t i = 0; i < stms->size; i++)
     {
+      ast_stm *stm = vector_get (stms, i);
+      sema_check_stm (stm, env);
     }
 
   STACK_POP (&stac);
@@ -74,6 +78,27 @@ sema_check_def (ast_def *def, ast_env *env)
         ast_def_func *get = AST_DEF_GET (func, def);
         sema_check_type (get->type, env);
         sema_check (get->env);
+        break;
+      }
+    }
+}
+
+void
+sema_check_stm (ast_stm *stm, ast_env *env)
+{
+  switch (stm->kind)
+    {
+    case AST_STM_ASSIGN:
+      {
+        ast_stm_assign *get = AST_STM_GET (assign, stm);
+        ast_exp *obj = get->obj;
+        ast_exp *exp = get->exp;
+        sema_check_exp (obj, env);
+        sema_check_exp (exp, env);
+
+        if (!sema_exp_is_lv (obj))
+          error ("%s (%u:%u) need a lvalue as its first operand\n",
+                 "assign stm", obj->pos.ln, obj->pos.ch);
         break;
       }
     }
@@ -247,6 +272,27 @@ sema_check_exp (ast_exp *exp, ast_env *env)
         exp->type = operand1->type->ref;
         break;
       }
+    case AST_EXP_BIN_PLUS:
+    case AST_EXP_BIN_MINUS:
+    case AST_EXP_BIN_TIMES:
+    case AST_EXP_BIN_DIV:
+      {
+        ast_exp *operand1 = AST_EXP_GET (binary, exp)->exp1;
+        ast_exp *operand2 = AST_EXP_GET (binary, exp)->exp2;
+        sema_check_exp (operand1, env);
+        sema_check_exp (operand2, env);
+
+        const char *fmt = "%s (%u:%u) need a number as its operand\n";
+        if (!sema_exp_is_num (operand1))
+          error (fmt, "+ - * /", operand1->pos.ln, operand1->pos.ch);
+        if (!sema_exp_is_num (operand2))
+          error (fmt, "+ - * /", operand2->pos.ln, operand2->pos.ch);
+
+        exp->type = operand1->type->kind > operand2->type->kind
+                        ? operand1->type
+                        : operand2->type;
+        break;
+      }
     }
 }
 
@@ -348,6 +394,7 @@ sema_exp_is_lv (ast_exp *exp)
     case AST_EXP_ELEM_ID:
     case AST_EXP_BIN_DMEM:
     case AST_EXP_BIN_PMEM:
+    case AST_EXP_BIN_INDEX:
       return true;
     default:
       return false;

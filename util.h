@@ -9,7 +9,7 @@
 /* ********************************************** */
 
 extern void error (const char *fmt, ...)
-    __attribute__ ((nonnull (1), noreturn));
+    __attribute__ ((format (printf, 1, 2), nonnull (1), noreturn));
 
 /* ********************************************** */
 /*                    memory                      */
