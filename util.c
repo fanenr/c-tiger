@@ -1,48 +1,41 @@
 #include "util.h"
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 void
-error (const char *fmt, ...)
+quit (void)
 {
-  va_list ap;
-  va_start (ap, fmt);
-  vfprintf (stderr, fmt, ap);
-  va_end (ap);
   exit (1);
 }
 
 void *
 checked_alloc (size_t size)
 {
-  void *ret = malloc (size);
-  if (ret == NULL)
-    error ("error: checked_alloc:malloc\n");
-  if (memset (ret, 0, size) != ret)
-    error ("error: checked_alloc:memset\n");
+  void *ret;
+  if (!(ret = calloc (1, size)))
+    error ("can not allocate memory");
   return ret;
 }
 
 void *
 checked_realloc (void *ptr, size_t size)
 {
-  void *ret = realloc (ptr, size);
-  if (ret == NULL)
-    error ("error: checked_realloc:realloc\n");
+  void *ret;
+  if (!(ret = realloc (ptr, size)))
+    error ("can not allocate memory");
   return ret;
 }
 
 char *
 checked_strdup (const char *src)
 {
+  char *ret;
   size_t cap = strlen (src) + 1;
-  char *ret = malloc (cap);
-  if (ret == NULL)
-    error ("error: checked_strup:malloc\n");
+  if (!(ret = malloc (cap)))
+    error ("can not allocate memory");
   if (memcpy (ret, src, cap) != ret)
-    error ("error: checked_strup:memcpy\n");
+    error ("can not copy string\n");
   return ret;
 }
 
@@ -52,7 +45,7 @@ checked_atol (const char *src)
   char *end;
   long ret = strtol (src, &end, 0);
   if (end == src)
-    error ("error: checked_atol:strtol\n");
+    error ("invalid string\n");
   return ret;
 }
 
@@ -62,7 +55,7 @@ checked_atod (const char *src)
   char *end;
   double ret = strtod (src, &end);
   if (end == src)
-    error ("error: checked_atod:strtod\n");
+    error ("invalid string\n");
   return ret;
 }
 

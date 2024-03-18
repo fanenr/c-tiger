@@ -2,14 +2,23 @@
 #define UTIL_H
 
 #include <stdbool.h>
-#include <stddef.h>
+#include <stdio.h>
 
 /* ********************************************** */
 /*                     error                      */
 /* ********************************************** */
 
-extern void error (const char *fmt, ...)
-    __attribute__ ((format (printf, 1, 2), nonnull (1), noreturn));
+#define error(FMT, ...)                                                       \
+  do                                                                          \
+    {                                                                         \
+      fprintf (stderr, "%s (%s:%d): ", __FILE__, __FUNCTION__, __LINE__);     \
+      fprintf (stderr, FMT, ##__VA_ARGS__);                                   \
+      fprintf (stderr, "\n");                                                 \
+      quit ();                                                                \
+    }                                                                         \
+  while (0)
+
+extern void quit (void) __attribute__ ((noreturn));
 
 /* ********************************************** */
 /*                    memory                      */
