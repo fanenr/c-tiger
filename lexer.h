@@ -1,10 +1,6 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include "ast.h"
-
-extern ast_pos m_pos;
-
 extern void nline (void);
 extern void other (void);
 extern void adjust (void);

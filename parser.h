@@ -4,6 +4,7 @@
 #include "ast.h"
 
 extern ast_env prog;
+
 extern const char *base_type_name[];
 extern const unsigned base_type_size[];
 

@@ -1,16 +1,26 @@
-LDFLAGS = -g
-NOWARN  = -Wno-unused-variable -Wno-unused-function
-CFLAGS  = -Wall -Wextra $(NOWARN) -ggdb3 -std=gnu11
+CSTD   = -std=gnu11
+CXXSTD = -std=c++17
+WARN   = -Wall -Wextra -Werror
+NOWARN = -Wno-unused-variable -Wno-unused-function
 
-src := util.c sema.c lexer.c parser.c driver.c 
-src += tiger.l.c tiger.y.c
+OPT_LEVEL    = -Og
+DBG_LDFLAGS  = -g
+DBG_CFLAGS   = -ggdb3
+
+CFLAGS   = $(WARN) $(NOWARN) $(OPT_LEVEL) $(DBG_CFLAGS) $(LTO_CFLAGS) \
+          $(CSTD) $(ASAN_CFLAGS)
+LDFLAGS  = $(DBG_LDFLAGS) $(LTO_LDFLAGS) $(ASAN_LDFLAGS)
+
+src := driver.c sema.c parser.c ast.c lexer.c \
+       mstr.c array.c rbtree.c \
+       tiger.l.c tiger.y.c
 obj := $(src:%.c=%.o)
 
 .PHONY: all
 all: tiger
 
 tiger: $(obj)
-	gcc $(LDFLAGS) -o $@ $^ 
+	gcc $(LDFLAGS) -o $@ $^
 
 include deps.mk
 
@@ -24,8 +34,7 @@ tiger.y.c tiger.y.h: tiger.y
 	bison -v --header=$<.h -o $<.c $<
 
 .PHONY: json
-json:
-	make clean
+json: clean
 	bear -- make
 
 .PHONY: clean

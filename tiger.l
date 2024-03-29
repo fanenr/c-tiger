@@ -60,3 +60,9 @@ return                { ADJ (); RET (RETURN ); }
 \n                    { NLN ();                }
 .                     { OTR ();                }
 %%
+
+int
+yywrap (void)
+{
+  return 1;
+}
