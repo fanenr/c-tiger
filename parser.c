@@ -8,10 +8,6 @@
 
 ast_env prog;
 
-#define VEC_PUSH_BACK(VEC, PTR)                                               \
-  if (!vector_push_back (VEC, PTR))                                           \
-  error ("error: vector_push_back\n")
-
 ast_env *
 ast_env_push (ast_env *env, void *ptr)
 {

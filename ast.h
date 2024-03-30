@@ -84,9 +84,8 @@ enum
   AST_EXP_BIN_LAND,
   AST_EXP_BIN_LOR,
   AST_EXP_BIN_LOGIC_ED,
-  AST_EXP_BIN_CALL,
   AST_EXP_BIN_ED,
-  AST_EXP_COMMA,
+  AST_EXP_CALL,
   AST_EXP_ED,
 };
 
@@ -109,9 +108,13 @@ typedef struct ast_stm_return ast_stm_return;
 
 typedef struct ast_exp ast_exp;
 typedef struct ast_exp_elem ast_exp_elem;
+typedef struct ast_exp_call ast_exp_call;
 typedef struct ast_exp_unary ast_exp_unary;
-typedef struct ast_exp_comma ast_exp_comma;
 typedef struct ast_exp_binary ast_exp_binary;
+
+extern ast_env prog;
+extern const char *base_type_name[];
+extern const unsigned base_type_size[];
 
 /* **************************************************************** */
 /*                             ast pos                              */
@@ -203,30 +206,30 @@ struct ast_stm
   ast_pos pos;
 };
 
+struct ast_stm_return
+{
+  ast_stm base;
+  ast_exp *val;
+};
+
 struct ast_stm_assign
 {
   ast_stm base;
   ast_exp *obj;
-  ast_exp *exp;
-};
-
-struct ast_stm_return
-{
-  ast_stm base;
-  ast_exp *exp;
+  ast_exp *val;
 };
 
 struct ast_stm_while
 {
   ast_stm base;
-  ast_exp *exp;
   ast_env *env;
+  ast_exp *cond;
 };
 
 struct ast_stm_if
 {
   ast_stm base;
-  ast_exp *exp;
+  ast_exp *cond;
   ast_env *then_env;
   ast_env *else_env;
 };
@@ -250,8 +253,14 @@ struct ast_exp_elem
     long num;
     mstr_t str;
     double real;
-    ast_def *id;
+    ast_def_var *var;
   };
+};
+
+struct ast_exp_call
+{
+  array_t *args;
+  ast_def_func *func;
 };
 
 struct ast_exp_unary
@@ -265,12 +274,6 @@ struct ast_exp_binary
   ast_exp base;
   ast_exp *exp1;
   ast_exp *exp2;
-};
-
-struct ast_exp_comma
-{
-  ast_exp base;
-  array_t exps;
 };
 
 /* **************************************************************** */

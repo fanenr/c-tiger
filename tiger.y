@@ -1,9 +1,8 @@
 %{
-#include "lexer.h"
 #include "parser.h"
 
 extern int yylex (void);
-extern void yyerror(const char *);
+extern void yyerror(const char *msg);
 %}
 
 %union {
@@ -40,39 +39,39 @@ extern void yyerror(const char *);
 %left LPAREN
 
 %type <ptr>
-      bloc type
-      def def_var def_type def_func def_func_parm
-      stm stm_assign stm_return stm_while stm_if
-      exp exp_elem exp_paren exp_unary exp_binary
-      exp_binary_bit exp_binary_mem exp_binary_math
-      exp_binary_logic exp_binary_call exp_comma
+      stm def exp type bloc
+      stm_return stm_assign stm_while stm_if
+      def_var def_type def_func def_func_parm
+      exp_elem exp_paren exp_unary exp_binary
+      exp_call exp_call_args exp_unary_mem exp_unary_math
+      exp_binary_mem exp_binary_bit exp_binary_math exp_binary_logic
 
 %start prog
 
 %%
 prog
     : def
-      { ast_env_push (&prog, $1); }
+      { ast_env_push_def (&prog, $1); }
     | prog def
-      { ast_env_push (&prog, $2); }
-    ;
-
-bloc
-    : def
-      { $$ = ast_env_push (0, $1);  }
-    | stm
-      { $$ = ast_env_push (0, $1);  }
-    | bloc def
-      { $$ = ast_env_push ($1, $2); }
-    | bloc stm
-      { $$ = ast_env_push ($1, $2); }
+      { ast_env_push_def (&prog, $2); }
     ;
 
 type
     : ID
-      { $$ = ast_type_push ($1, 0);  }
+      { POS ($1); $$ = ast_type_new (0, $1);  }
     | TIMES type
-      { $$ = ast_type_push ($1, $2); }
+      { POS ($1); $$ = ast_type_new ($2, $1); }
+    ;
+
+bloc
+    : def
+      { $$ = ast_env_push_def (0, $1);  }
+    | stm
+      { $$ = ast_env_push_stm (0, $1);  }
+    | bloc def
+      { $$ = ast_env_push_def ($1, $2); }
+    | bloc stm
+      { $$ = ast_env_push_stm ($1, $2); }
     ;
 
 def
@@ -86,34 +85,34 @@ def
 
 def_var
     : VAR ID COLON type SEMI
-      { $$ = AST_DEF_NEW (VAR, $1, $2, $4);  }
+      { POS ($1); $$ = ast_def_var_new ($2, $4);  }
     ;
 
 def_type
     : TYPE ID EQ type SEMI
-      { $$ = AST_DEF_NEW (TYPE, $1, $2, $4); }
+      { POS ($1); $$ = ast_def_type_new ($2, $4);        }
     | UNION ID LBRACE bloc RBRACE
-      { $$ = AST_DEF_NEW (TYPE, $1, $2, $4); }
+      { POS ($1); $$ = ast_def_type_union_new ($2, $4);  }
     | STRUCT ID LBRACE bloc RBRACE
-      { $$ = AST_DEF_NEW (TYPE, $1, $2, $4); }
+      { POS ($1); $$ = ast_def_type_struct_new ($2, $4); }
     ;
 
 def_func
     : FUNC ID LPAREN RPAREN type LBRACE RBRACE
-      { $$ = AST_DEF_NEW (FUNC, $1, $2, 0, $5, 0);   }
+      { POS ($1); $$ = ast_def_func_new ($2, 0, $5, 0);   }
     | FUNC ID LPAREN RPAREN type LBRACE bloc RBRACE
-      { $$ = AST_DEF_NEW (FUNC, $1, $2, 0, $5, $7);  }
+      { POS ($1); $$ = ast_def_func_new ($2, 0, $5, $7);  }
     | FUNC ID LPAREN def_func_parm RPAREN type LBRACE RBRACE
-      { $$ = AST_DEF_NEW (FUNC, $1, $2, $4, $6, 0);  }
+      { POS ($1); $$ = ast_def_func_new ($2, $4, $6, 0);  }
     | FUNC ID LPAREN def_func_parm RPAREN type LBRACE bloc RBRACE
-      { $$ = AST_DEF_NEW (FUNC, $1, $2, $4, $6, $8); }
+      { POS ($1); $$ = ast_def_func_new ($2, $4, $6, $8); }
     ;
 
 def_func_parm
     : ID COLON type
-      { $$ = ast_parm_push (0, $1, $3);  }
+      { POS ($1); $$ = ast_def_func_parm_new (0, $1, $3);  }
     | def_func_parm COMMA ID COLON type
-      { $$ = ast_parm_push ($1, $3, $5); }
+      { POS ($3); $$ = ast_def_func_parm_new ($1, $3, $5); }
     ;
 
 stm
@@ -127,28 +126,28 @@ stm
       { $$ = $1; }
     ;
 
-stm_assign
-    : exp EQ exp SEMI
-      { $$ = AST_STM_NEW (ASSIGN, $1, $3); }
-    ;
-
 stm_return
     : RETURN SEMI
-      { $$ = AST_STM_NEW (RETURN, $1, 0);  }
+      { POS ($1); $$ = ast_stm_return_new (0);  }
     | RETURN exp SEMI
-      { $$ = AST_STM_NEW (RETURN, $1, $2); }
+      { POS ($1); $$ = ast_stm_return_new ($2); }
+    ;
+
+stm_assign
+    : exp EQ exp SEMI
+      { $$ = ast_stm_assign_new ($1, $3);  }
     ;
 
 stm_while
     : WHILE LPAREN exp RPAREN LBRACE bloc RBRACE
-      { $$ = AST_STM_NEW (WHILE, $1, $3, $6);    }
+      { POS ($1); $$ = ast_stm_while_new ($3, $6);   }
     ;
 
 stm_if
     : IF LPAREN exp RPAREN LBRACE bloc RBRACE
-      { $$ = AST_STM_NEW (IF1, $1, $3, $6, 0);   }
+      { POS ($1); $$ = ast_stm_if_new ($3, $6, 0);   }
     | IF LPAREN exp RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE
-      { $$ = AST_STM_NEW (IF2, $1, $3, $6, $10); }
+      { POS ($1); $$ = ast_stm_if_new ($3, $6, $10); }
     ;
 
 exp
@@ -164,13 +163,28 @@ exp
 
 exp_elem
     : ID
-      { $$ = AST_EXP_NEW (ELEM_ID, $1);   }
+      { $$ = ast_exp_elem_new ($1); }
     | NUM
-      { $$ = AST_EXP_NEW (ELEM_NUM, $1);  }
+      { $$ = ast_exp_elem_new ($1); }
     | STR
-      { $$ = AST_EXP_NEW (ELEM_STR, $1);  }
+      { $$ = ast_exp_elem_new ($1); }
     | REAL
-      { $$ = AST_EXP_NEW (ELEM_REAL, $1); }
+      { $$ = ast_exp_elem_new ($1); }
+    ;
+
+
+exp_call
+    : ID LPAREN RPAREN
+      { $$ = ast_exp_call_new ($1, 0);  }
+    | ID LPAREN exp_call_args RPAREN
+      { $$ = ast_exp_call_new ($1, $3); }
+    ;
+
+exp_call_args
+    : exp
+      { $$ = ast_exp_call_args_new (0, $1);  }
+    | exp_call_args COMMA exp
+      { $$ = ast_exp_call_args_new ($1, $3); }
     ;
 
 exp_paren
@@ -179,21 +193,24 @@ exp_paren
     ;
 
 exp_unary
-    : PLUS exp %prec UPLUS
-      { $$ = AST_EXP_NEW (UN_UPLUS, $1, $2);  }
-    | MINUS exp %prec UMINUS
-      { $$ = AST_EXP_NEW (UN_UMINUS, $1, $2); }
-    | AND exp %prec ADDR
-      { $$ = AST_EXP_NEW (UN_ADDR, $1, $2);   }
-    | TIMES exp %prec DREF
-      { $$ = AST_EXP_NEW (UN_DREF, $1, $2);   }
+    : exp_unary_mem
+      { $$ = $1; }
+    | exp_unary_math
+      { $$ = $1; }
     ;
 
-exp_comma
-    : exp
-      { $$ = ast_comma_push (0, $1);  }
-    | exp_comma COMMA exp
-      { $$ = ast_comma_push ($1, $3); }
+exp_unary_mem
+    : AND exp %prec ADDR
+      { POS ($1); $$ = UN_NEW (ADDR, $2);   }
+    | TIMES exp %prec DREF
+      { POS ($1); $$ = UN_NEW (DREF, $2);   }
+    ;
+
+exp_unary_math
+    : PLUS exp %prec UPLUS
+      { POS ($1); $$ = UN_NEW (UPLUS, $2);  }
+    | MINUS exp %prec UMINUS
+      { POS ($1); $$ = UN_NEW (UMINUS, $2); }
     ;
 
 exp_binary
@@ -205,64 +222,55 @@ exp_binary
       { $$ = $1; }
     | exp_binary_logic
       { $$ = $1; }
-    | exp_binary_call
-      { $$ = $1; }
-    ;
-
-exp_binary_bit
-    : exp OR exp
-      { $$ = AST_EXP_NEW (BIN_OR, $1, $3);    }
-    | exp AND exp
-      { $$ = AST_EXP_NEW (BIN_AND, $1, $3);   }
-    | exp XOR exp
-      { $$ = AST_EXP_NEW (BIN_XOR, $1, $3);   }
     ;
 
 exp_binary_mem
     : exp DOT exp
-      { $$ = AST_EXP_NEW (BIN_DMEM, $1, $3);  }
+      { $$ = BIN_NEW (DMEM, $1, $3);  }
     | exp PMEM exp
-      { $$ = AST_EXP_NEW (BIN_PMEM, $1, $3);  }
+      { $$ = BIN_NEW (PMEM, $1, $3);  }
     | exp LBRACK exp RBRACK
-      { $$ = AST_EXP_NEW (BIN_INDEX, $1, $3); }
+      { $$ = BIN_NEW (INDEX, $1, $3); }
+    ;
+
+exp_binary_bit
+    : exp OR exp
+      { $$ = BIN_NEW (OR, $1, $3);    }
+    | exp AND exp
+      { $$ = BIN_NEW (AND, $1, $3);   }
+    | exp XOR exp
+      { $$ = BIN_NEW (XOR, $1, $3);   }
     ;
 
 exp_binary_math
     : exp PLUS exp
-      { $$ = AST_EXP_NEW (BIN_PLUS, $1, $3);  }
+      { $$ = BIN_NEW (PLUS, $1, $3);  }
     | exp MINUS exp
-      { $$ = AST_EXP_NEW (BIN_MINUS, $1, $3); }
+      { $$ = BIN_NEW (MINUS, $1, $3); }
     | exp TIMES exp
-      { $$ = AST_EXP_NEW (BIN_TIMES, $1, $3); }
+      { $$ = BIN_NEW (TIMES, $1, $3); }
     | exp DIV exp
-      { $$ = AST_EXP_NEW (BIN_DIV, $1, $3);   }
+      { $$ = BIN_NEW (DIV, $1, $3);   }
     | exp MOD exp
-      { $$ = AST_EXP_NEW (BIN_MOD, $1, $3);   }
+      { $$ = BIN_NEW (MOD, $1, $3);   }
     ;
 
 exp_binary_logic
     : exp LT exp
-      { $$ = AST_EXP_NEW (BIN_LT, $1, $3);    }
+      { $$ = BIN_NEW (LT, $1, $3);    }
     | exp GT exp
-      { $$ = AST_EXP_NEW (BIN_GT, $1, $3);    }
+      { $$ = BIN_NEW (GT, $1, $3);    }
     | exp LEQ exp
-      { $$ = AST_EXP_NEW (BIN_LEQ, $1, $3);   }
+      { $$ = BIN_NEW (LEQ, $1, $3);   }
     | exp NEQ exp
-      { $$ = AST_EXP_NEW (BIN_NEQ, $1, $3);   }
+      { $$ = BIN_NEW (NEQ, $1, $3);   }
     | exp LTEQ exp
-      { $$ = AST_EXP_NEW (BIN_LTEQ, $1, $3);  }
+      { $$ = BIN_NEW (LTEQ, $1, $3);  }
     | exp GTEQ exp
-      { $$ = AST_EXP_NEW (BIN_GTEQ, $1, $3);  }
+      { $$ = BIN_NEW (GTEQ, $1, $3);  }
     | exp LAND exp
-      { $$ = AST_EXP_NEW (BIN_LAND, $1, $3);  }
+      { $$ = BIN_NEW (LAND, $1, $3);  }
     | exp LOR exp
-      { $$ = AST_EXP_NEW (BIN_LOR, $1, $3);   }
-    ;
-
-exp_binary_call
-    : exp LPAREN RPAREN
-      { $$ = AST_EXP_NEW (BIN_CALL, $1, 0);   }
-    | exp LPAREN exp_comma RPAREN
-      { $$ = AST_EXP_NEW (BIN_CALL, $1, $3);  }
+      { $$ = BIN_NEW (LOR, $1, $3);   }
     ;
 %%

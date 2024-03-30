@@ -3,32 +3,73 @@
 
 #include "ast.h"
 
-extern ast_env prog;
+extern void ast_prog_init (void);
 
-extern const char *base_type_name[];
-extern const unsigned base_type_size[];
+#define POS(tok) set_parse_pos (tok)
 
-void ast_env_init (void);
+/* set pos from tok */
+extern void set_parse_pos (ast_tok tok);
 
-ast_env *ast_env_push (ast_env *env, void *ptr);
-ast_exp *ast_comma_push (ast_exp *exp, ast_exp *next);
-ast_env *ast_parm_push (ast_env *env, ast_tok id, ast_type *type);
-ast_type *ast_type_push (ast_tok tok, ast_type *type);
+/* push a stm to env */
+extern ast_env *ast_env_push_stm (ast_env *env, ast_stm *stm);
 
-ast_def *ast_def_new (int type, ...);
-ast_stm *ast_stm_new (int type, ...);
-ast_exp *ast_exp_new (int type, ...);
+/* push a def to env */
+extern ast_env *ast_env_push_def (ast_env *env, ast_def *def);
 
-#define AST_DEF_NEW(TYPE, ...) ast_def_new (AST_DEF_##TYPE, ##__VA_ARGS__)
-#define AST_STM_NEW(TYPE, ...) ast_stm_new (AST_STM_##TYPE, ##__VA_ARGS__)
-#define AST_EXP_NEW(TYPE, ...) ast_exp_new (AST_EXP_##TYPE, ##__VA_ARGS__)
+/* **************************************************************** */
+/*                             type new                             */
+/* **************************************************************** */
 
-#define AST_DEF_GET(TYPE, PTR) ((ast_def_##TYPE *)((ast_def *)PTR + 1))
-#define AST_STM_GET(TYPE, PTR) ((ast_stm_##TYPE *)((ast_stm *)PTR + 1))
-#define AST_EXP_GET(TYPE, PTR) ((ast_exp_##TYPE *)((ast_exp *)PTR + 1))
+extern ast_type *ast_type_new (ast_type *type, ast_tok tok);
 
-#define AST_DEF_SIZE(TYPE) (sizeof (ast_def) + sizeof (ast_def_##TYPE))
-#define AST_STM_SIZE(TYPE) (sizeof (ast_stm) + sizeof (ast_stm_##TYPE))
-#define AST_EXP_SIZE(TYPE) (sizeof (ast_exp) + sizeof (ast_exp_##TYPE))
+/* **************************************************************** */
+/*                             def new                              */
+/* **************************************************************** */
+
+extern ast_def *ast_def_var_new (ast_tok name, ast_type *type);
+
+extern ast_def *ast_def_type_new (ast_tok name, ast_type *origin);
+
+extern ast_def *ast_def_type_union_new (ast_tok name, ast_env *env);
+
+extern ast_def *ast_def_type_struct_new (ast_tok name, ast_env *env);
+
+extern array_t *ast_def_func_parm_new (array_t *parm, ast_tok name,
+                                       ast_type *type);
+
+extern ast_def *ast_def_func_new (ast_tok name, array_t *parm, ast_type *type,
+                                  ast_env *env);
+
+/* **************************************************************** */
+/*                             stm new                              */
+/* **************************************************************** */
+
+extern ast_stm *ast_stm_return_new (ast_exp *val);
+
+extern ast_stm *ast_stm_assign_new (ast_exp *obj, ast_exp *val);
+
+extern ast_stm *ast_stm_while_new (ast_exp *cond, ast_env *env);
+
+extern ast_stm *ast_stm_if_new (ast_exp *cond, ast_env *then_env,
+                                ast_env *else_env);
+
+/* **************************************************************** */
+/*                             exp new                              */
+/* **************************************************************** */
+
+#define UN_NEW(kind, exp) ast_exp_unary_new (AST_EXP_UN_##kind, exp)
+
+#define BIN_NEW(kind, exp1, exp2)                                             \
+  ast_exp_binary_new (AST_EXP_BIN_##kind, exp1, exp2)
+
+extern ast_exp *ast_exp_elem_new (ast_tok tok);
+
+extern ast_exp *ast_exp_unary_new (int kind, ast_exp *exp);
+
+extern ast_exp *ast_exp_call_new (ast_tok name, array_t *args);
+
+extern array_t *ast_exp_call_args_new (array_t *args, ast_exp *arg);
+
+extern ast_exp *ast_exp_binary_new (int kind, ast_exp *, ast_exp *exp2);
 
 #endif
