@@ -5,41 +5,43 @@
 #include "tiger.y.h"
 #include <stdlib.h>
 
-long conv_atol (const char *src);
-double conv_atod (const char *src);
-
 extern int yyleng;
 extern const char *yytext;
 
-ast_pos m_pos = { .ln = 1, .ch = 1 };
+long conv_atol (const char *src);
+double conv_atod (const char *src);
+
+static ast_pos m_pos = { .ln = 1, .ch = 1 };
 
 void
-adjust (void)
+lexer_chpos (void)
 {
   m_pos.ch += yyleng;
 }
 
 void
-nline (void)
+lexer_nline (void)
 {
   m_pos.ln++;
   m_pos.ch = 1;
 }
 
 void
-other (void)
+lexer_other (void)
 {
-  ast_error ("use unkonw token %s", m_pos, yytext);
+  ast_error (m_pos, "unkonw token %s", yytext);
 }
 
 int
-handle (int tok)
+lexer_ret (int kind)
 {
   yylval.tok.pos.ch = m_pos.ch - yyleng;
   yylval.tok.pos.ln = m_pos.ln;
-  yylval.tok.kind = tok;
+  yylval.tok.kind = kind;
+  
+  mstr_t *str = &yylval.tok.str;
 
-  switch (tok)
+  switch (kind)
     {
     case REAL:
       yylval.tok.real = conv_atod (yytext);
@@ -50,13 +52,13 @@ handle (int tok)
     case STR:
     case ID:
       {
-        mstr_t *str = &yylval.tok.str;
+        mstr_init (str);
         mstr_assign_cstr (str, yytext);
       }
       break;
     }
 
-  return tok;
+  return kind;
 }
 
 long

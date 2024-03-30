@@ -1,339 +1,23 @@
 #include "parser.h"
+#include "array.h"
+#include "array_ext.h"
 #include "ast.h"
-#include "lexer.h"
-#include "tiger.y.h"
-#include <stdarg.h>
+#include "common.h"
+#include "mstr.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 
+#define ARRAY_INIT_CAP 8
+#define ARRAY_EXPAN_RATIO 2
+
 ast_env prog;
+static ast_pos m_pos = { .ln = 0, .ch = 0 };
 
-ast_env *
-ast_env_push (ast_env *env, void *ptr)
+void
+set_parse_pos (ast_tok tok)
 {
-  if (!env)
-    env = checked_alloc (sizeof (ast_env));
-
-  int type = *(int *)ptr;
-  switch (type)
-    {
-    case AST_DEF_ST + 1 ... AST_DEF_ED - 1:
-      {
-        ast_def *def = ptr;
-        VEC_PUSH_BACK (&env->defs, def);
-        break;
-      }
-    case AST_STM_ST + 1 ... AST_STM_ED - 1:
-      {
-        ast_stm *stm = ptr;
-        VEC_PUSH_BACK (&env->stms, stm);
-        break;
-      }
-    }
-
-  return env;
-}
-
-ast_exp *
-ast_comma_push (ast_exp *exp, ast_exp *next)
-{
-  if (!exp)
-    {
-      exp = checked_alloc (AST_EXP_SIZE (comma));
-      /* set kind */
-      exp->kind = AST_EXP_COMMA;
-      /* set pos */
-      exp->pos = next->pos;
-    }
-
-  ast_exp_comma *get = AST_EXP_GET (comma, exp);
-  /* push next exp */
-  VEC_PUSH_BACK (&get->exps, next);
-
-  return exp;
-}
-
-ast_type *
-ast_type_push (ast_tok tok, ast_type *type)
-{
-  ast_type *new = checked_alloc (sizeof (ast_type));
-  new->pos = tok.pos;
-
-  switch (tok.kind)
-    {
-    case ID:
-      {
-        new->kind = AST_TYPE_UNDEF;
-        /* new->size */
-        new->ref = (ast_type *)tok.str;
-        break;
-      }
-    case TIMES:
-      {
-        new->kind = AST_TYPE_POINTER;
-        new->size = sizeof (void *);
-        new->ref = type;
-        break;
-      }
-    }
-
-  return new;
-}
-
-ast_env *
-ast_parm_push (ast_env *env, ast_tok id, ast_type *type)
-{
-  if (!env)
-    env = checked_alloc (sizeof (ast_env));
-
-  ast_def *def = checked_alloc (AST_DEF_SIZE (var));
-  def->kind = AST_DEF_VAR;
-  def->pos = id.pos;
-  def->id = id;
-
-  ast_def_var *get = AST_DEF_GET (var, def);
-  get->type = type;
-
-  return ast_env_push (env, def);
-}
-
-ast_def *
-ast_def_new (int type, ...)
-{
-  static unsigned sizes[] = { [AST_DEF_VAR] = AST_DEF_SIZE (var),
-                              [AST_DEF_TYPE] = AST_DEF_SIZE (type),
-                              [AST_DEF_FUNC] = AST_DEF_SIZE (func) };
-
-  va_list ap;
-  va_start (ap, type);
-  ast_tok tok = va_arg (ap, ast_tok);
-
-  ast_def *def = checked_alloc (sizes[type]);
-  def->kind = type;
-  def->pos = tok.pos;
-
-  switch (type)
-    {
-    case AST_DEF_VAR:
-      {
-        ast_tok id = va_arg (ap, ast_tok);
-        ast_type *type = va_arg (ap, ast_type *);
-        /* set id */
-        def->id = id;
-        ast_def_var *get = AST_DEF_GET (var, def);
-        /* set type */
-        get->type = type;
-        break;
-      }
-    case AST_DEF_TYPE:
-      {
-        ast_tok id = va_arg (ap, ast_tok);
-        void *ptr = va_arg (ap, void *);
-        switch (tok.kind)
-          {
-          case TYPE:
-            {
-              /* set id */
-              def->id = id;
-              ast_def_type *get = AST_DEF_GET (type, def);
-              /* set type */
-              ast_type *type = ptr;
-              get->type = type;
-              break;
-            }
-          case UNION:
-          case STRUCT:
-            {
-              /* set id */
-              def->id = id;
-              ast_def_type *get = AST_DEF_GET (type, def);
-              ast_type *type = checked_alloc (sizeof (ast_type));
-              /* set kind */
-              type->kind
-                  = tok.kind == UNION ? AST_TYPE_UNION : AST_TYPE_STRUCT;
-              /* set pos */
-              type->pos = tok.pos;
-              /* type->size */
-              /* set mem */
-              ast_env *mem = ptr;
-              type->mem = mem;
-              /* set type */
-              get->type = type;
-              break;
-            }
-          }
-        break;
-      }
-    case AST_DEF_FUNC:
-      {
-        ast_tok id = va_arg (ap, ast_tok);
-        ast_env *parm = va_arg (ap, ast_env *);
-        ast_type *type = va_arg (ap, ast_type *);
-        ast_env *env = va_arg (ap, ast_env *);
-        /* set id */
-        def->id = id;
-        ast_def_func *get = AST_DEF_GET (func, def);
-        /* set parm */
-        get->parm = parm ? parm->defs.size : 0;
-        if (!parm)
-          parm = checked_alloc (sizeof (ast_env));
-        /* set type */
-        get->type = type;
-        /* set env */
-        if (env)
-          {
-            parm->stms = env->stms;
-            for (size_t i = 0; i < env->defs.size; i++)
-              VEC_PUSH_BACK (&parm->defs, vector_get (&env->defs, i));
-            free (env);
-          }
-        get->env = parm;
-        break;
-      }
-    }
-
-  va_end (ap);
-  return def;
-}
-
-ast_stm *
-ast_stm_new (int type, ...)
-{
-  static unsigned sizes[]
-      = { [AST_STM_RETURN] = AST_STM_SIZE (return),
-          [AST_STM_ASSIGN] = AST_STM_SIZE (assign),
-          [AST_STM_WHILE] = AST_STM_SIZE (while),
-          [(AST_STM_IF_ST + 1)...(AST_STM_IF_ED - 1)] = AST_STM_SIZE (if),
-        };
-
-  va_list ap;
-  va_start (ap, type);
-
-  ast_stm *stm = checked_alloc (sizes[type]);
-  stm->kind = type;
-
-  switch (type)
-    {
-    case AST_STM_RETURN:
-      {
-        ast_tok tok = va_arg (ap, ast_tok);
-        ast_exp *exp = va_arg (ap, ast_exp *);
-        ast_stm_return *get = AST_STM_GET (return, stm);
-        /* set pos */
-        stm->pos = tok.pos;
-        /* set exp */
-        get->exp = exp;
-        break;
-      }
-    case AST_STM_ASSIGN:
-      {
-        ast_exp *obj = va_arg (ap, ast_exp *);
-        ast_exp *val = va_arg (ap, ast_exp *);
-        ast_stm_assign *get = AST_STM_GET (assign, stm);
-        /* set pos */
-        stm->pos = obj->pos;
-        /* set obj */
-        get->obj = obj;
-        /* set exp */
-        get->exp = val;
-        break;
-      }
-    case AST_STM_WHILE:
-      {
-        ast_tok tok = va_arg (ap, ast_tok);
-        ast_exp *exp = va_arg (ap, ast_exp *);
-        ast_env *env = va_arg (ap, ast_env *);
-        ast_stm_while *get = AST_STM_GET (while, stm);
-        /* set pos */
-        stm->pos = tok.pos;
-        /* set exp */
-        get->exp = exp;
-        /* set env */
-        get->env = env;
-        break;
-      }
-    case AST_STM_IF_ST + 1 ... AST_STM_IF_ED - 1:
-      {
-        ast_tok tok = va_arg (ap, ast_tok);
-        ast_exp *exp = va_arg (ap, ast_exp *);
-        ast_env *env1 = va_arg (ap, ast_env *);
-        ast_env *env2 = va_arg (ap, ast_env *);
-        ast_stm_if *get = AST_STM_GET (if, stm);
-        /* set pos */
-        stm->pos = tok.pos;
-        /* set exp */
-        get->exp = exp;
-        /* set env */
-        get->then_env = env1;
-        get->else_env = env2;
-        break;
-      }
-    }
-
-  va_end (ap);
-  return stm;
-}
-
-ast_exp *
-ast_exp_new (int type, ...)
-{
-  static unsigned sizes[] = {
-    [(AST_EXP_ELEM_ST + 1)...(AST_EXP_ELEM_ED - 1)] = AST_EXP_SIZE (elem),
-    [(AST_EXP_UN_ST + 1)...(AST_EXP_UN_ED - 1)] = AST_EXP_SIZE (unary),
-    [(AST_EXP_BIN_ST + 1)...(AST_EXP_BIN_ED - 1)] = AST_EXP_SIZE (binary),
-  };
-
-  ast_exp *exp = checked_alloc (sizes[type]);
-  exp->kind = type;
-
-  va_list ap;
-  va_start (ap, type);
-
-  switch (type)
-    {
-    case AST_EXP_ELEM_ST + 1 ... AST_EXP_ELEM_ED - 1:
-      {
-        ast_tok tok = va_arg (ap, ast_tok);
-        /* set pos */
-        exp->pos = tok.pos;
-        /* exp->type */
-        exp->type = checked_alloc (sizeof (ast_type));
-        /* set elem */
-        ast_exp_elem *get = AST_EXP_GET (elem, exp);
-        get->elem = tok;
-        break;
-      }
-    case AST_EXP_UN_ST + 1 ... AST_EXP_UN_ED - 1:
-      {
-        ast_tok tok = va_arg (ap, ast_tok);
-        ast_exp *val = va_arg (ap, ast_exp *);
-        /* set pos */
-        exp->pos = tok.pos;
-        /* exp->type */
-        exp->type = checked_alloc (sizeof (ast_type));
-        /* set exp */
-        ast_exp_unary *get = AST_EXP_GET (unary, exp);
-        get->exp = val;
-        break;
-      }
-    case AST_EXP_BIN_ST + 1 ... AST_EXP_BIN_ED - 1:
-      {
-        ast_exp *exp1 = va_arg (ap, ast_exp *);
-        ast_exp *exp2 = va_arg (ap, ast_exp *);
-        /* set pos */
-        exp->pos = exp1->pos;
-        /* exp->type */
-        exp->type = checked_alloc (sizeof (ast_type));
-        /* set exps */
-        ast_exp_binary *get = AST_EXP_GET (binary, exp);
-        get->exp1 = exp1;
-        get->exp2 = exp2;
-        break;
-      }
-    }
-
-  va_end (ap);
-  return exp;
+  m_pos = tok.pos;
 }
 
 const char *base_type_name[] = {
@@ -355,37 +39,268 @@ const unsigned base_type_size[] = {
 };
 
 void
-ast_env_init (void)
+ast_prog_init (void)
 {
-  ast_def *def;
-  ast_def_type *get;
-  ast_tok tok = { 0 };
+  prog.defs.elem_size = sizeof (ast_def *);
+  prog.stms.elem_size = sizeof (ast_stm *);
 
-  for (int i = AST_TYPE_BASE_ST + 1; i <= AST_TYPE_BASE_ED - 1; i++)
+  for (int i = AST_TYPE_BASE_ST + 1; i < AST_TYPE_BASE_ED; i++)
     {
-      /* set kind */
-      def = checked_alloc (AST_DEF_SIZE (type));
-      def->kind = AST_DEF_TYPE;
-      /* set pos */
-      def->pos = tok.pos;
-      /* set id */
-      tok.str = checked_strdup (base_type_name[i]);
-      def->id = tok;
-
-      ast_type *type = checked_alloc (sizeof (ast_type));
+      ast_type *type = mem_malloc (sizeof (ast_type));
       type->size = base_type_size[i];
+      type->pos = m_pos;
       type->kind = i;
 
-      /* set type */
-      get = AST_DEF_GET (type, def);
-      get->type = type;
+      ast_def_type *def = mem_malloc (sizeof (ast_def_type));
+      ast_def *base = &def->base;
+      mstr_t *name = &base->name;
+      base->kind = AST_DEF_TYPE;
+      base->pos = m_pos;
+      def->type = type;
 
-      ast_env_push (&prog, def);
+      *name = MSTR_INIT;
+      mstr_assign_cstr (name, base_type_name[i]);
+
+      ast_env_push_def (&prog, base);
     }
 }
 
 void
-yyerror (const char *msg)
+array_expand (array_t *arr)
 {
-  error ("error occured at %u:%u: %s\n", m_pos.ln, m_pos.ch, msg);
+  if (arr->size < arr->cap)
+    return;
+
+  size_t newcap = arr->cap * ARRAY_EXPAN_RATIO ?: ARRAY_INIT_CAP;
+  void *newdata = mem_realloc (arr->data, newcap * arr->elem_size);
+
+  arr->data = newdata;
+  arr->cap = newcap;
+}
+
+ast_env *
+ast_env_new (void)
+{
+  ast_env *ret = mem_malloc (sizeof (ast_env));
+
+  ret->defs = (array_t){ .elem_size = sizeof (ast_def *) };
+  ret->stms = (array_t){ .elem_size = sizeof (ast_stm *) };
+  ret->outer = NULL;
+
+  return ret;
+}
+
+ast_env *
+ast_env_push_stm (ast_env *env, ast_stm *stm)
+{
+  if (!env)
+    env = ast_env_new ();
+
+  array_t *stms = &env->stms;
+  array_t *defs = &env->defs;
+  array_expand (stms);
+
+  ast_stm **inpos = array_push_back (stms);
+  stm->index = stms->size + defs->size;
+  *inpos = stm;
+
+  return env;
+}
+
+int
+defs_name_comp (const void *a /* const ast_def ** */,
+                const void *b /* const ast_def** */)
+{
+  const ast_def *da = *(const ast_def **)a;
+  const ast_def *db = *(const ast_def **)b;
+  return mstr_cmp_mstr (&da->name, &db->name);
+}
+
+ast_env *
+ast_env_push_def (ast_env *env, ast_def *def)
+{
+  if (!env)
+    env = ast_env_new ();
+
+  array_t *defs = &env->defs;
+  array_t *stms = &env->stms;
+  array_expand (defs);
+
+  ast_def **defined;
+  if ((defined = array_find (defs, &def, defs_name_comp)))
+    {
+      ast_pos pos = (*defined)->pos;
+      ast_error (def->pos, "%s has been defined here %d:%d",
+                 mstr_data (&def->name), pos.ln, pos.ch);
+    }
+
+  ast_def **inpos = array_push_back (defs);
+  def->index = defs->size + stms->size;
+  *inpos = def;
+
+  return env;
+}
+
+ast_type *
+ast_type_new (ast_type *origin, ast_tok tok)
+{
+  ast_type *type = mem_malloc (sizeof (ast_type));
+  type->pos = tok.pos;
+
+  if (origin)
+    { /* pointer */
+      type->ref = origin;
+      type->size = sizeof (void *);
+      type->kind = AST_TYPE_POINTER;
+    }
+  else
+    { /* undetermined */
+      type->kind = -1;
+      type->name = tok.str;
+    }
+
+  return type;
+}
+
+ast_def *
+ast_def_var_new (ast_tok name, ast_type *type)
+{
+  ast_def_var *def = mem_malloc (sizeof (ast_def_var));
+  ast_def *base = &def->base;
+  base->kind = AST_DEF_VAR;
+  base->name = name.str;
+  base->pos = m_pos;
+  def->type = type;
+  return base;
+}
+
+ast_def *
+ast_def_type_new (ast_tok name, ast_type *origin)
+{
+  ast_def_type *def = mem_malloc (sizeof (ast_def_type));
+  ast_def *base = &def->base;
+  base->kind = AST_DEF_TYPE;
+  base->name = name.str;
+  base->pos = m_pos;
+  def->type = origin;
+  return base;
+}
+
+ast_def *
+ast_def_type_union_new (ast_tok name, ast_env *env)
+{
+  ast_def_type *def = mem_malloc (sizeof (ast_def_type));
+  ast_def *base = &def->base;
+  base->kind = AST_DEF_TYPE;
+  base->name = name.str;
+  base->pos = m_pos;
+
+  ast_type *type = mem_malloc (sizeof (ast_type));
+  type->kind = AST_TYPE_UNION;
+  type->pos = m_pos;
+  type->mem = env;
+
+  def->type = type;
+
+  return base;
+}
+
+ast_def *
+ast_def_type_struct_new (ast_tok name, ast_env *env)
+{
+  ast_def_type *def = mem_malloc (sizeof (ast_def_type));
+  ast_def *base = &def->base;
+  base->kind = AST_DEF_TYPE;
+  base->name = name.str;
+  base->pos = m_pos;
+
+  ast_type *type = mem_malloc (sizeof (ast_type));
+  type->kind = AST_TYPE_STRUCT;
+  type->pos = m_pos;
+  type->mem = env;
+
+  def->type = type;
+
+  return base;
+}
+
+array_t *
+ast_def_func_parm_new (array_t *parm, ast_tok name, ast_type *type)
+{
+  if (!parm)
+    {
+      parm = mem_malloc (sizeof (array_t));
+      *parm = (array_t){ .elem_size = sizeof (ast_def *) };
+    }
+
+  ast_def_var *def = mem_malloc (sizeof (ast_def_var));
+  ast_def *base = &def->base;
+  base->kind = AST_DEF_VAR;
+  base->name = name.str;
+  base->pos = name.pos;
+  array_expand (parm);
+
+  ast_def **defined;
+  if ((defined = array_find (parm, &base, defs_name_comp)))
+    {
+      ast_pos pos = (*defined)->pos;
+      ast_error (name.pos, "%s has been defined here %d:%d",
+                 mstr_data (&name.str), pos.ln, pos.ch);
+    }
+
+  ast_def **inpos = array_push_back (parm);
+  base->index = parm->size;
+  def->type = type;
+  *inpos = base;
+
+  return parm;
+}
+
+ast_def *
+ast_def_func_new (ast_tok name, array_t *parm, ast_type *type, ast_env *env)
+{
+  ast_def_func *def = mem_malloc (sizeof (ast_def_func));
+  ast_def *base = &def->base;
+  base->kind = AST_DEF_FUNC;
+  base->name = name.str;
+  base->pos = m_pos;
+
+  if (!env)
+    env = ast_env_new ();
+
+  def->type = type;
+  def->env = env;
+
+  if (!parm)
+    {
+      def->parms = 0;
+      return base;
+    }
+
+  array_t *defs = &env->defs;
+  def->parms = parm->size;
+
+  for (size_t i = 0; i < parm->size; i++)
+    {
+      ast_def *def_parm = *(ast_def **)array_at (parm, i);
+      def_parm->index -= parm->size;
+      array_expand (defs);
+
+      ast_def **defined;
+      if ((defined = array_find (defs, &def_parm, defs_name_comp)))
+        {
+          ast_pos pos_parm = def_parm->pos;
+          ast_pos pos_defined = (*defined)->pos;
+          ast_error (pos_defined, "%s has been defined here %d:%d",
+                     mstr_data (&name.str), pos_parm.ln, pos_parm.ch);
+        }
+
+      ast_def **inpos = array_push_back (defs);
+      *inpos = def_parm;
+    }
+
+  free (parm->data);
+  free (parm);
+
+  return base;
 }

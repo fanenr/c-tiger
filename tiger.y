@@ -58,9 +58,9 @@ prog
 
 type
     : ID
-      { POS ($1); $$ = ast_type_new (0, $1);  }
+      { $$ = ast_type_new (0, $1);  }
     | TIMES type
-      { POS ($1); $$ = ast_type_new ($2, $1); }
+      { $$ = ast_type_new ($2, $1); }
     ;
 
 bloc
@@ -110,9 +110,9 @@ def_func
 
 def_func_parm
     : ID COLON type
-      { POS ($1); $$ = ast_def_func_parm_new (0, $1, $3);  }
+      { $$ = ast_def_func_parm_new (0, $1, $3);  }
     | def_func_parm COMMA ID COLON type
-      { POS ($3); $$ = ast_def_func_parm_new ($1, $3, $5); }
+      { $$ = ast_def_func_parm_new ($1, $3, $5); }
     ;
 
 stm
@@ -152,6 +152,8 @@ stm_if
 
 exp
     : exp_elem
+      { $$ = $1; }
+    | exp_call
       { $$ = $1; }
     | exp_paren
       { $$ = $1; }
@@ -274,3 +276,9 @@ exp_binary_logic
       { $$ = BIN_NEW (LOR, $1, $3);   }
     ;
 %%
+
+void
+yyerror (const char *msg)
+{
+  parser_other (msg);
+}

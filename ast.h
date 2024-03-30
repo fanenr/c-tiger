@@ -3,7 +3,6 @@
 
 #include "array.h"
 #include "mstr.h"
-#include "rbtree.h"
 
 enum
 {
@@ -122,19 +121,19 @@ extern const unsigned base_type_size[];
 
 struct ast_pos
 {
-  int ln;
-  int ch;
+  int ln; /* line number */
+  int ch; /* char number */
 };
 
 struct ast_tok
 {
-  int kind;
-  ast_pos pos;
+  int kind;    /* kind of tok */
+  ast_pos pos; /* pos in source code */
   union
   {
-    long num;
-    mstr_t str;
-    double real;
+    long num;    /* for integer */
+    mstr_t str;  /* for tok and string-literal */
+    double real; /* for real number */
   };
 };
 
@@ -144,9 +143,9 @@ struct ast_tok
 
 struct ast_env
 {
-  array_t stms;
-  rbtree_t defs;
-  ast_env *outer;
+  array_t stms;   /* stms */
+  array_t defs;   /* defs */
+  ast_env *outer; /* outer env */
 };
 
 /* **************************************************************** */
@@ -155,13 +154,14 @@ struct ast_env
 
 struct ast_type
 {
-  int kind;
-  ast_pos pos;
-  unsigned size;
+  int kind;      /* kind of type */
+  ast_pos pos;   /* pos in source code */
+  unsigned size; /* size of type */
   union
   {
-    ast_env *mem;
-    ast_type *ref;
+    mstr_t name;   /* for undetermined type */
+    ast_env *mem;  /* for union or struct */
+    ast_type *ref; /* for pointer */
   };
 };
 
@@ -171,29 +171,30 @@ struct ast_type
 
 struct ast_def
 {
-  int kind;
-  ast_pos pos;
-  mstr_t name;
+  int kind;    /* kind of def */
+  int index;   /* index in env */
+  ast_pos pos; /* pos in source code */
+  mstr_t name; /* name of def */
 };
 
 struct ast_def_var
 {
   ast_def base;
-  ast_type *type;
+  ast_type *type; /* kind of var */
 };
 
 struct ast_def_type
 {
   ast_def base;
-  ast_type *type;
+  ast_type *type; /* origin type */
 };
 
 struct ast_def_func
 {
   ast_def base;
-  ast_env *env;
-  ast_type *type;
-  unsigned parms;
+  ast_env *env;   /* func body */
+  ast_type *type; /* return type of func */
+  unsigned parms; /* the number of func parms  */
 };
 
 /* **************************************************************** */
@@ -202,8 +203,9 @@ struct ast_def_func
 
 struct ast_stm
 {
-  int kind;
-  ast_pos pos;
+  int kind;    /* kind of stm */
+  int index;   /* index in env */
+  ast_pos pos; /* pos in source code */
 };
 
 struct ast_stm_return
@@ -282,7 +284,7 @@ struct ast_exp_binary
 
 #include <stdio.h>
 
-#define ast_error(FMT, POS, ...)                                              \
+#define ast_error(POS, FMT, ...)                                              \
   do                                                                          \
     {                                                                         \
       fprintf (stderr, "error occured at %d:%d: ", (POS).ln, (POS).ch);       \

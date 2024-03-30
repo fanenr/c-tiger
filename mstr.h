@@ -33,6 +33,9 @@ union mstr_t
   mstr_heap_t heap;
 };
 
+#define MSTR_INIT                                                             \
+  (mstr_t) (mstr_sso_t) { .flg = true }
+
 extern void mstr_init (mstr_t *str) __attribute__ ((nonnull (1)));
 
 extern void mstr_free (mstr_t *str) __attribute__ ((nonnull (1)));

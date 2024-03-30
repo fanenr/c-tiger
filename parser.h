@@ -5,6 +5,8 @@
 
 extern void ast_prog_init (void);
 
+extern void parser_other (const char *text);
+
 #define POS(tok) set_parse_pos (tok)
 
 /* set pos from tok */
@@ -20,7 +22,7 @@ extern ast_env *ast_env_push_def (ast_env *env, ast_def *def);
 /*                             type new                             */
 /* **************************************************************** */
 
-extern ast_type *ast_type_new (ast_type *type, ast_tok tok);
+extern ast_type *ast_type_new (ast_type *origin, ast_tok tok);
 
 /* **************************************************************** */
 /*                             def new                              */

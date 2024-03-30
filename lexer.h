@@ -1,14 +1,14 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-extern void nline (void);
-extern void other (void);
-extern void adjust (void);
-extern int handle (int tok);
+extern void lexer_nline (void);
+extern void lexer_other (void);
+extern void lexer_chpos (void);
+extern int lexer_ret (int kind);
 
-#define NLN() nline ()
-#define OTR() other ()
-#define ADJ() adjust ()
-#define RET(TOK) return handle (TOK)
+#define NLN() lexer_nline ()
+#define OTR() lexer_other ()
+#define ADJ() lexer_chpos ()
+#define RET(kind) return lexer_ret (kind)
 
 #endif

@@ -24,7 +24,7 @@
 #define mem_malloc(size)                                                      \
   ({                                                                          \
     void *ret;                                                                \
-    if (!(ret = mcalloc (size)))                                              \
+    if (!(ret = malloc (size)))                                               \
       error ("can not allocate memory");                                      \
     ret;                                                                      \
   })
