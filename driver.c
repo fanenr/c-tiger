@@ -1,17 +1,18 @@
+#include "array.h"
 #include "ast.h"
 #include "common.h"
+#include "mstr.h"
 #include "parser.h"
 #include "sema.h"
 
 #include "tiger.y.h"
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 extern FILE *yyin;
 extern int yylex (void);
 extern int yyparse (void);
-
-extern ast_env *m_env;
 
 void print_wsp (int n);
 void print_type (ast_type *type);
@@ -27,8 +28,10 @@ main (int argc, char **argv)
   if (yyin == NULL)
     error ("open file %s failed\n", argv[1]);
 
-  ast_env_init ();
+  ast_prog_init ();
+
   yyparse ();
+
   sema_check (&prog);
 
   printf ("prog\n");
@@ -41,99 +44,104 @@ print (ast_env *env, int l)
   if (!env)
     return;
 
-  vector *defs = &env->defs;
+  array_t *defs = &env->defs;
+  array_t *stms = &env->stms;
+
   print_wsp (l);
+
   printf ("defs: %lu\n", defs->size);
   for (size_t i = 0; i < defs->size; i++)
     {
-      ast_def *def = defs->data[i];
-      if (def->kind == AST_DEF_TYPE)
+      ast_def *base = *(ast_def **)array_at (defs, i);
+
+      if (base->kind == AST_DEF_TYPE)
         {
-          ast_def_type *get = AST_DEF_GET (type, def);
-          ast_type *type = get->type;
+          ast_def_type *def = container_of (base, ast_def_type, base);
+          ast_type *type = def->type;
+
           if (type->kind == AST_TYPE_UNION)
             {
               print_wsp (l);
-              printf ("union %s\n", def->id.str);
+              printf ("union %s\n", mstr_data (&base->name));
               print (type->mem, l + 1);
             }
           else if (type->kind == AST_TYPE_STRUCT)
             {
               print_wsp (l);
-              printf ("struct %s\n", def->id.str);
+              printf ("struct %s\n", mstr_data (&base->name));
               print (type->mem, l + 1);
             }
           else
             {
               print_wsp (l);
-              printf ("type %s: ", def->id.str);
+              printf ("type %s: ", mstr_data (&base->name));
               print_type (type);
               printf ("\n");
             }
         }
 
-      if (def->kind == AST_DEF_VAR)
+      if (base->kind == AST_DEF_VAR)
         {
           print_wsp (l);
-          printf ("var %s: ", def->id.str);
-          print_type (AST_DEF_GET (var, def)->type);
+          printf ("var %s: ", mstr_data (&base->name));
+          ast_def_var *def = container_of (base, ast_def_var, base);
+          print_type (def->type);
           printf ("\n");
         }
 
-      if (def->kind == AST_DEF_FUNC)
+      if (base->kind == AST_DEF_FUNC)
         {
-          ast_def_func *get = AST_DEF_GET (func, def);
           print_wsp (l);
-          printf ("func %s: ", def->id.str);
-          print_type (get->type);
+          printf ("func %s: ", mstr_data (&base->name));
+          ast_def_func *def = container_of (base, ast_def_func, base);
+          print_type (def->type);
           printf ("\n");
-          print (get->env, l + 1);
+          print (def->env, l + 1);
         }
     }
 
-  vector *stms = &env->stms;
   print_wsp (l);
+
   printf ("stms: %lu\n", stms->size);
   for (size_t i = 0; i < stms->size; i++)
     {
-      ast_stm *stm = stms->data[i];
-      if (stm->kind == AST_STM_ASSIGN)
+      ast_stm *base = *(ast_stm **)array_at (stms, i);
+
+      if (base->kind == AST_STM_ASSIGN)
         {
-          ast_stm_assign *get = AST_STM_GET (assign, stm);
           print_wsp (l);
           printf ("assign\n");
         }
 
-      if (stm->kind == AST_STM_WHILE)
+      if (base->kind == AST_STM_WHILE)
         {
-          ast_stm_while *get = AST_STM_GET (while, stm);
+          ast_stm_while *stm = container_of (base, ast_stm_while, base);
           print_wsp (l);
           printf ("while\n");
-          print (get->env, l + 1);
+          print (stm->env, l + 1);
         }
 
-      if (stm->kind == AST_STM_RETURN)
+      if (base->kind == AST_STM_RETURN)
         {
-          ast_stm_return *get = AST_STM_GET (return, stm);
           print_wsp (l);
           printf ("return\n");
         }
 
-      if (stm->kind == AST_STM_IF1)
+      if (base->kind == AST_STM_IF1)
         {
-          ast_stm_if *get = AST_STM_GET (if, stm);
+          ast_stm_if *stm = container_of (base, ast_stm_if, base);
           print_wsp (l);
           printf ("if\n");
-          print (get->then_env, l + 1);
+          print (stm->then_env, l + 1);
         }
 
-      if (stm->kind == AST_STM_IF2)
+      if (base->kind == AST_STM_IF2)
         {
-          ast_stm_if *get = AST_STM_GET (if, stm);
+          ast_stm_if *stm = container_of (base, ast_stm_if, base);
           print_wsp (l);
           printf ("if\n");
-          print (get->then_env, l + 1);
-          print (get->else_env, l + 1);
+          print (stm->then_env, l + 1);
+          print (stm->else_env, l + 1);
         }
     }
 }

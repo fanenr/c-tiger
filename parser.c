@@ -278,12 +278,12 @@ ast_def_func_new (ast_tok name, array_t *parm, ast_type *type, ast_env *env)
     }
 
   array_t *defs = &env->defs;
-  def->parms = parm->size;
+  size_t size_parm = parm->size;
 
-  for (size_t i = 0; i < parm->size; i++)
+  for (size_t i = size_parm; i; i--)
     {
-      ast_def *def_parm = *(ast_def **)array_at (parm, i);
-      def_parm->index -= parm->size;
+      ast_def *def_parm = *(ast_def **)array_at (parm, i - 1);
+      def_parm->index -= size_parm;
       array_expand (defs);
 
       ast_def **defined;
@@ -295,10 +295,11 @@ ast_def_func_new (ast_tok name, array_t *parm, ast_type *type, ast_env *env)
                      mstr_data (&name.str), pos_parm.ln, pos_parm.ch);
         }
 
-      ast_def **inpos = array_push_back (defs);
+      ast_def **inpos = array_insert (defs, 0);
       *inpos = def_parm;
     }
 
+  def->parms = size_parm;
   free (parm->data);
   free (parm);
 
