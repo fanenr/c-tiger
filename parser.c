@@ -265,17 +265,12 @@ ast_def_func_new (ast_tok name, array_t *parm, ast_type *type, ast_env *env)
   base->name = name.str;
   base->pos = m_pos;
 
-  if (!env)
-    env = ast_env_new ();
-
-  def->type = type;
   def->env = env;
+  def->type = type;
+  def->parms = parm ? parm->size : 0;
 
   if (!parm)
-    {
-      def->parms = 0;
-      return base;
-    }
+    return base;
 
   array_t *defs = &env->defs;
   size_t size_parm = parm->size;
@@ -299,9 +294,56 @@ ast_def_func_new (ast_tok name, array_t *parm, ast_type *type, ast_env *env)
       *inpos = def_parm;
     }
 
-  def->parms = size_parm;
   free (parm->data);
   free (parm);
 
+  return base;
+}
+
+ast_stm *
+ast_stm_return_new (ast_exp *val)
+{
+  ast_stm_return *stm = mem_malloc (sizeof (ast_stm_return));
+  ast_stm *base = &stm->base;
+  base->kind = AST_STM_RETURN;
+  base->pos = m_pos;
+  stm->val = val;
+  return base;
+}
+
+ast_stm *
+ast_stm_assign_new (ast_exp *obj, ast_exp *val)
+{
+  ast_stm_assign *stm = mem_malloc (sizeof (ast_stm_assign));
+  ast_stm *base = &stm->base;
+  base->kind = AST_STM_ASSIGN;
+  base->pos = obj->pos;
+  stm->obj = obj;
+  stm->val = val;
+  return base;
+}
+
+ast_stm *
+ast_stm_while_new (ast_exp *cond, ast_env *env)
+{
+  ast_stm_while *stm = mem_malloc (sizeof (ast_stm_while));
+  ast_stm *base = &stm->base;
+  base->kind = AST_STM_WHILE;
+  base->pos = m_pos;
+  stm->cond = cond;
+  stm->env = env;
+  return base;
+}
+
+ast_stm *
+ast_stm_if_new (ast_exp *cond, ast_env *then_env, ast_env *else_env)
+{
+  ast_stm_if *stm = mem_malloc (sizeof (ast_stm_if));
+  ast_stm *base = &stm->base;
+  stm->then_env = then_env;
+  stm->else_env = else_env;
+  base->kind = AST_STM_IF;
+  base->pos = m_pos;
+  stm->cond = cond;
   return base;
 }

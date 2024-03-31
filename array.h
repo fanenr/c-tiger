@@ -26,4 +26,6 @@ extern void array_erase (array_t *arr, size_t pos) attr_nonnull (1);
 
 extern void *array_push_back (array_t *arr) attr_nonnull (1);
 
+extern void array_pop_back (array_t *arr) attr_nonnull (1);
+
 #endif

@@ -98,12 +98,8 @@ def_type
     ;
 
 def_func
-    : FUNC ID LPAREN RPAREN type LBRACE RBRACE
-      { POS ($1); $$ = ast_def_func_new ($2, 0, $5, 0);   }
-    | FUNC ID LPAREN RPAREN type LBRACE bloc RBRACE
+    : FUNC ID LPAREN RPAREN type LBRACE bloc RBRACE
       { POS ($1); $$ = ast_def_func_new ($2, 0, $5, $7);  }
-    | FUNC ID LPAREN def_func_parm RPAREN type LBRACE RBRACE
-      { POS ($1); $$ = ast_def_func_new ($2, $4, $6, 0);  }
     | FUNC ID LPAREN def_func_parm RPAREN type LBRACE bloc RBRACE
       { POS ($1); $$ = ast_def_func_new ($2, $4, $6, $8); }
     ;

@@ -127,15 +127,7 @@ print (ast_env *env, int l)
           printf ("return\n");
         }
 
-      if (base->kind == AST_STM_IF1)
-        {
-          ast_stm_if *stm = container_of (base, ast_stm_if, base);
-          print_wsp (l);
-          printf ("if\n");
-          print (stm->then_env, l + 1);
-        }
-
-      if (base->kind == AST_STM_IF2)
+      if (base->kind == AST_STM_IF)
         {
           ast_stm_if *stm = container_of (base, ast_stm_if, base);
           print_wsp (l);

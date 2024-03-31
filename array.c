@@ -55,6 +55,13 @@ array_push_back (array_t *arr)
   return arr->data + arr->elem_size * arr->size++;
 }
 
+void
+array_pop_back (array_t *arr)
+{
+  if (arr->size)
+    arr->size--;
+}
+
 /* **************************************************************** */
 /*                               ext                                */
 /* **************************************************************** */
