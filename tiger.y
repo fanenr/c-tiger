@@ -39,11 +39,8 @@ extern void yyerror(const char *msg);
 %left LPAREN
 
 %type <ptr>
-      def exp stm type type1 type2 bloc
-      def_var def_type def_func def_func_parm
-      exp_elem exp_paren exp_unary exp_binary
+      type exp exp_elem exp_paren exp_unary exp_binary
       exp_call exp_call_args exp_unary_mem exp_unary_math
-      stm_return stm_assign stm_while stm_if stm_if1 stm_if2
       exp_binary_mem exp_binary_bit exp_binary_math exp_binary_logic
 
 %start prog
@@ -51,119 +48,132 @@ extern void yyerror(const char *msg);
 %%
 prog
     : def
-      { ast_env_push_def (&prog, $1); }
     | prog def
-      { ast_env_push_def (&prog, $2); }
     ;
 
 type
-    : type1
-      { $$ = $1; }
-    | type2
-      { $$ = $1; }
-    ;
-
-type1
     : ID
-      { $$ = ast_type1_new ($1);  }
-    ;
-
-type2
-    : TIMES type1
+      { POS ($1); $$ = ast_type1_new ($1); }
+    | TIMES type
       { POS ($1); $$ = ast_type2_new ($2); }
     ;
 
 bloc
     : def
-      { $$ = ast_env_push_def (0, $1);  }
     | stm
-      { $$ = ast_env_push_stm (0, $1);  }
     | bloc def
-      { $$ = ast_env_push_def ($1, $2); }
     | bloc stm
-      { $$ = ast_env_push_stm ($1, $2); }
     ;
 
 def
     : def_var
-      { $$ = $1; }
     | def_type
-      { $$ = $1; }
     | def_func
-      { $$ = $1; }
+    | def_union
+    | def_struct
     ;
 
 def_var
     : VAR ID COLON type SEMI
-      { POS ($1); $$ = ast_def_var_new ($2, $4);  }
+      { POS ($1); ast_def_var_new ($2, $4);  }
     ;
 
 def_type
     : TYPE ID EQ type SEMI
-      { POS ($1); $$ = ast_def_type_new ($2, $4);        }
-    | UNION ID LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_def_type_union_new ($2, $4);  }
-    | STRUCT ID LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_def_type_struct_new ($2, $4); }
+      { POS ($1); ast_def_type_new ($2, $4); }
+    ;
+
+def_union
+    : union_pre ID LBRACE bloc RBRACE
+      { ast_def_union_new ($2);   }
+    ;
+
+def_struct
+    : struct_pre ID LBRACE bloc RBRACE
+      { ast_def_struct_new ($2);  }
+    ;
+
+union_pre
+    : UNION
+      { POS ($1); ast_env_new (); }
+    ;
+
+struct_pre
+    : STRUCT
+      { POS ($1); ast_env_new (); }
     ;
 
 def_func
-    : FUNC ID LPAREN RPAREN type LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_def_func_new ($2, 0, $5, $7);  }
-    | FUNC ID LPAREN def_func_parm RPAREN type LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_def_func_new ($2, $4, $6, $8); }
+    : func_pre ID LPAREN RPAREN type LBRACE bloc RBRACE
+      { ast_def_func_new ($2, $5); }
+    | func_pre ID LPAREN func_parm RPAREN type LBRACE bloc RBRACE
+      { ast_def_func_new ($2, $6); }
     ;
 
-def_func_parm
+func_pre
+    : FUNC
+      { POS ($1); ast_env_new ();   }
+    ;
+
+func_parm
     : ID COLON type
-      { $$ = ast_def_func_parm_new (0, $1, $3);  }
-    | def_func_parm COMMA ID COLON type
-      { $$ = ast_def_func_parm_new ($1, $3, $5); }
+      { ast_func_parm_new ($1, $3); }
+    | func_parm COMMA ID COLON type
+      { ast_func_parm_new ($3, $5); }
     ;
 
 stm
     : stm_assign
-      { $$ = $1; }
     | stm_return
-      { $$ = $1; }
     | stm_while
-      { $$ = $1; }
     | stm_if
-      { $$ = $1; }
     ;
 
 stm_return
     : RETURN SEMI
-      { POS ($1); $$ = ast_stm_return_new (0);  }
+      { POS ($1); ast_stm_return_new (0);  }
     | RETURN exp SEMI
-      { POS ($1); $$ = ast_stm_return_new ($2); }
+      { POS ($1); ast_stm_return_new ($2); }
     ;
 
 stm_assign
     : exp EQ exp SEMI
-      { $$ = ast_stm_assign_new ($1, $3);  }
+      { ast_stm_assign_new ($1, $3); }
     ;
 
 stm_while
-    : WHILE LPAREN exp RPAREN LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_stm_while_new ($3, $6); }
+    : while_pre LPAREN exp RPAREN LBRACE bloc RBRACE
+      { ast_stm_while_new ($3);      }
+    ;
+
+while_pre
+    : WHILE
+      { POS ($1); ast_env_new ();    }
     ;
 
 stm_if
     : stm_if1
-      { $$ = $1; }
     | stm_if2
-      { $$ = $1; }
     ;
 
 stm_if1
-    : IF LPAREN exp RPAREN LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_stm_if1_new ($3, $6); }
+    : if1_pre LPAREN exp RPAREN LBRACE bloc RBRACE
+      { ast_stm_if1_new ($3); }
     ;
 
 stm_if2
-    : stm_if1 ELSE LBRACE bloc RBRACE
-      { $$ = ast_stm_if2_nwe ($1, $4); }
+    : stm_if1 if2_pre LBRACE bloc RBRACE
+      { ast_stm_if2_new ();   }
+    ;
+
+if1_pre
+    : IF
+      { POS ($1); ast_env_new (); }
+    ;
+
+if2_pre
+    : ELSE
+      { ast_env_new ();           }
     ;
 
 exp
@@ -193,16 +203,16 @@ exp_elem
 
 exp_call
     : ID LPAREN RPAREN
-      { $$ = ast_exp_call_new ($1, 0);  }
+      { $$ = ast_exp_call_new ($1, 0);   }
     | ID LPAREN exp_call_args RPAREN
-      { $$ = ast_exp_call_new ($1, $3); }
+      { $$ = ast_exp_call_new ($1, $3);  }
     ;
 
 exp_call_args
     : exp
-      { $$ = ast_exp_call_args_new (0, $1);  }
+      { $$ = ast_call_args_new (0, $1);  }
     | exp_call_args COMMA exp
-      { $$ = ast_exp_call_args_new ($1, $3); }
+      { $$ = ast_call_args_new ($1, $3); }
     ;
 
 exp_paren

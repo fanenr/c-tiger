@@ -7,16 +7,15 @@ extern void ast_prog_init (void);
 
 extern void parser_other (const char *text);
 
+/* set pos from tok */
 #define POS(tok) set_parse_pos (tok)
 
-/* set pos from tok */
 extern void set_parse_pos (ast_tok tok);
 
-/* push a stm to env */
-extern ast_env *ast_env_push_stm (ast_env *env, ast_stm *stm);
+/* new env */
+#define NEW_ENV() ast_env_new ()
 
-/* push a def to env */
-extern ast_env *ast_env_push_def (ast_env *env, ast_def *def);
+extern void ast_env_new (void);
 
 /* **************************************************************** */
 /*                             type new                             */
@@ -30,33 +29,31 @@ extern ast_type *ast_type2_new (ast_type *ref);
 /*                             def new                              */
 /* **************************************************************** */
 
-extern ast_def *ast_def_var_new (ast_tok name, ast_type *type);
+extern void ast_def_var_new (ast_tok name, ast_type *type);
 
-extern ast_def *ast_def_type_new (ast_tok name, ast_type *type);
+extern void ast_def_type_new (ast_tok name, ast_type *type);
 
-extern ast_def *ast_def_type_union_new (ast_tok name, ast_env *env);
+extern void ast_def_union_new (ast_tok name);
 
-extern ast_def *ast_def_type_struct_new (ast_tok name, ast_env *env);
+extern void ast_def_struct_new (ast_tok name);
 
-extern array_t *ast_def_func_parm_new (array_t *parm, ast_tok name,
-                                       ast_type *type);
+extern void ast_def_func_new (ast_tok name, ast_type *type);
 
-extern ast_def *ast_def_func_new (ast_tok name, array_t *parm, ast_type *type,
-                                  ast_env *env);
+extern void ast_func_parm_new (ast_tok name, ast_type *type);
 
 /* **************************************************************** */
 /*                             stm new                              */
 /* **************************************************************** */
 
-extern ast_stm *ast_stm_return_new (ast_exp *val);
+extern void ast_stm_return_new (ast_exp *val);
 
-extern ast_stm *ast_stm_assign_new (ast_exp *obj, ast_exp *val);
+extern void ast_stm_assign_new (ast_exp *obj, ast_exp *val);
 
-extern ast_stm *ast_stm_while_new (ast_exp *cond, ast_env *env);
+extern void ast_stm_while_new (ast_exp *cond);
 
-extern ast_stm *ast_stm_if1_new (ast_exp *cond, ast_env *then_env);
+extern void ast_stm_if1_new (ast_exp *cond);
 
-extern ast_stm *ast_stm_if2_new (ast_stm *base, ast_env *else_env);
+extern void ast_stm_if2_new (ast_stm *base);
 
 /* **************************************************************** */
 /*                             exp new                              */
@@ -73,7 +70,7 @@ extern ast_exp *ast_exp_unary_new (int kind, ast_exp *exp);
 
 extern ast_exp *ast_exp_call_new (ast_tok name, array_t *args);
 
-extern array_t *ast_exp_call_args_new (array_t *args, ast_exp *arg);
+extern array_t *ast_call_args_new (array_t *args, ast_exp *arg);
 
 extern ast_exp *ast_exp_binary_new (int kind, ast_exp *, ast_exp *exp2);
 

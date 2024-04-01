@@ -16,12 +16,6 @@ ast_env prog;
 static ast_env *m_env = &prog;
 static ast_pos m_pos = { .ln = 0, .ch = 0 };
 
-void
-set_parse_pos (ast_tok tok)
-{
-  m_pos = tok.pos;
-}
-
 const char *base_type_name[] = {
   [AST_TYPE_VOID] = "void",     [AST_TYPE_BOOL] = "bool",
   [AST_TYPE_INT8] = "int8",     [AST_TYPE_INT16] = "int16",
@@ -39,6 +33,17 @@ const unsigned base_type_size[] = {
   [AST_TYPE_UINT32] = sizeof (uint32_t), [AST_TYPE_UINT64] = sizeof (uint64_t),
   [AST_TYPE_FLOAT] = sizeof (float),     [AST_TYPE_DOUBLE] = sizeof (double),
 };
+
+static void array_expand (array_t *arr);
+static void ast_env_push_stm (ast_stm *stm);
+static void ast_env_push_def (ast_def *def);
+static int defs_name_comp (const void *a, const void *b);
+
+void
+set_parse_pos (ast_tok tok)
+{
+  m_pos = tok.pos;
+}
 
 void
 ast_prog_init (void)
@@ -63,70 +68,39 @@ ast_prog_init (void)
       *name = MSTR_INIT;
       mstr_assign_cstr (name, base_type_name[i]);
 
-      ast_env_push_def (&prog, base);
+      ast_env_push_def (base);
     }
 }
 
 void
-array_expand (array_t *arr)
-{
-  if (arr->size < arr->cap)
-    return;
-
-  size_t newcap = arr->cap * ARRAY_EXPAN_RATIO ?: ARRAY_INIT_CAP;
-  void *newdata = mem_realloc (arr->data, newcap * arr->elem_size);
-
-  arr->data = newdata;
-  arr->cap = newcap;
-}
-
-ast_env *
 ast_env_new (void)
 {
-  ast_env *ret = mem_malloc (sizeof (ast_env));
+  ast_env *new = mem_malloc (sizeof (ast_env));
 
-  ret->defs = (array_t){ .elem_size = sizeof (ast_def *) };
-  ret->stms = (array_t){ .elem_size = sizeof (ast_stm *) };
-  ret->outer = m_env;
-  m_env = ret;
+  new->defs = (array_t){ .elem_size = sizeof (ast_def *) };
+  new->stms = (array_t){ .elem_size = sizeof (ast_stm *) };
+  new->outer = m_env;
 
-  return ret;
+  m_env = new;
 }
 
-ast_env *
-ast_env_push_stm (ast_env *env, ast_stm *stm)
+static inline void
+ast_env_push_stm (ast_stm *stm)
 {
-  if (!env)
-    env = ast_env_new ();
-
-  array_t *stms = &env->stms;
-  array_t *defs = &env->defs;
+  array_t *stms = &m_env->stms;
+  array_t *defs = &m_env->defs;
   array_expand (stms);
 
   ast_stm **inpos = array_push_back (stms);
   stm->index = stms->size + defs->size;
   *inpos = stm;
-
-  return env;
 }
 
-int
-defs_name_comp (const void *a /* const ast_def ** */,
-                const void *b /* const ast_def** */)
+static inline void
+ast_env_push_def (ast_def *def)
 {
-  const ast_def *da = *(const ast_def **)a;
-  const ast_def *db = *(const ast_def **)b;
-  return mstr_cmp_mstr (&da->name, &db->name);
-}
-
-ast_env *
-ast_env_push_def (ast_env *env, ast_def *def)
-{
-  if (!env)
-    env = ast_env_new ();
-
-  array_t *defs = &env->defs;
-  array_t *stms = &env->stms;
+  array_t *defs = &m_env->defs;
+  array_t *stms = &m_env->stms;
   array_expand (defs);
 
   ast_def **defined;
@@ -140,8 +114,6 @@ ast_env_push_def (ast_env *env, ast_def *def)
   ast_def **inpos = array_push_back (defs);
   def->index = defs->size + stms->size;
   *inpos = def;
-
-  return env;
 }
 
 ast_type *
@@ -394,4 +366,26 @@ ast_exp_elem_new (ast_tok tok)
     }
 
   return base;
+}
+
+static inline void
+array_expand (array_t *arr)
+{
+  if (arr->size < arr->cap)
+    return;
+
+  size_t newcap = arr->cap * ARRAY_EXPAN_RATIO ?: ARRAY_INIT_CAP;
+  void *newdata = mem_realloc (arr->data, newcap * arr->elem_size);
+
+  arr->data = newdata;
+  arr->cap = newcap;
+}
+
+int
+defs_name_comp (const void *a /* const ast_def ** */,
+                const void *b /* const ast_def** */)
+{
+  const ast_def *da = *(const ast_def **)a;
+  const ast_def *db = *(const ast_def **)b;
+  return mstr_cmp_mstr (&da->name, &db->name);
 }
