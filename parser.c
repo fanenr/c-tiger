@@ -5,6 +5,7 @@
 #include "common.h"
 #include "mstr.h"
 
+#include "tiger.y.h"
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -12,6 +13,7 @@
 #define ARRAY_EXPAN_RATIO 2
 
 ast_env prog;
+static ast_env *m_env = &prog;
 static ast_pos m_pos = { .ln = 0, .ch = 0 };
 
 void
@@ -85,7 +87,8 @@ ast_env_new (void)
 
   ret->defs = (array_t){ .elem_size = sizeof (ast_def *) };
   ret->stms = (array_t){ .elem_size = sizeof (ast_stm *) };
-  ret->outer = NULL;
+  ret->outer = m_env;
+  m_env = ret;
 
   return ret;
 }
@@ -142,23 +145,24 @@ ast_env_push_def (ast_env *env, ast_def *def)
 }
 
 ast_type *
-ast_type_new (ast_type *origin, ast_tok tok)
+ast_type1_new (ast_tok name)
 {
   ast_type *type = mem_malloc (sizeof (ast_type));
-  type->pos = tok.pos;
+  type->pos = name.pos;
 
-  if (origin)
-    { /* pointer */
-      type->ref = origin;
-      type->size = sizeof (void *);
-      type->kind = AST_TYPE_POINTER;
-    }
-  else
-    { /* undetermined */
-      type->kind = -1;
-      type->name = tok.str;
-    }
+  /* TODO */
 
+  return type;
+}
+
+ast_type *
+ast_type2_new (ast_type *ref)
+{
+  ast_type *type = mem_malloc (sizeof (ast_type));
+  type->kind = AST_TYPE_POINTER;
+  type->size = sizeof (void *);
+  type->pos = m_pos;
+  type->ref = ref;
   return type;
 }
 
@@ -175,14 +179,14 @@ ast_def_var_new (ast_tok name, ast_type *type)
 }
 
 ast_def *
-ast_def_type_new (ast_tok name, ast_type *origin)
+ast_def_type_new (ast_tok name, ast_type *type)
 {
   ast_def_type *def = mem_malloc (sizeof (ast_def_type));
   ast_def *base = &def->base;
   base->kind = AST_DEF_TYPE;
   base->name = name.str;
   base->pos = m_pos;
-  def->type = origin;
+  def->type = type;
   return base;
 }
 
@@ -200,6 +204,7 @@ ast_def_type_union_new (ast_tok name, ast_env *env)
   type->pos = m_pos;
   type->mem = env;
 
+  m_env = env->outer;
   def->type = type;
 
   return base;
@@ -219,6 +224,7 @@ ast_def_type_struct_new (ast_tok name, ast_env *env)
   type->pos = m_pos;
   type->mem = env;
 
+  m_env = env->outer;
   def->type = type;
 
   return base;
@@ -272,6 +278,7 @@ ast_def_func_new (ast_tok name, array_t *parm, ast_type *type, ast_env *env)
   if (!parm)
     return base;
 
+  m_env = env->outer;
   array_t *defs = &env->defs;
   size_t size_parm = parm->size;
 
@@ -293,9 +300,6 @@ ast_def_func_new (ast_tok name, array_t *parm, ast_type *type, ast_env *env)
       ast_def **inpos = array_insert (defs, 0);
       *inpos = def_parm;
     }
-
-  free (parm->data);
-  free (parm);
 
   return base;
 }
@@ -330,20 +334,64 @@ ast_stm_while_new (ast_exp *cond, ast_env *env)
   ast_stm *base = &stm->base;
   base->kind = AST_STM_WHILE;
   base->pos = m_pos;
+
+  m_env = env->outer;
   stm->cond = cond;
   stm->env = env;
+
   return base;
 }
 
 ast_stm *
-ast_stm_if_new (ast_exp *cond, ast_env *then_env, ast_env *else_env)
+ast_stm_if1_new (ast_exp *cond, ast_env *then_env)
 {
   ast_stm_if *stm = mem_malloc (sizeof (ast_stm_if));
   ast_stm *base = &stm->base;
-  stm->then_env = then_env;
-  stm->else_env = else_env;
   base->kind = AST_STM_IF;
   base->pos = m_pos;
+
+  stm->then_env = then_env;
+  m_env = then_env->outer;
+  stm->else_env = NULL;
   stm->cond = cond;
+
+  return base;
+}
+
+ast_stm *
+ast_stm_if2_new (ast_stm *base, ast_env *else_env)
+{
+  ast_stm_if *stm = container_of (base, ast_stm_if, base);
+  stm->else_env = else_env;
+  m_env = else_env->outer;
+  return base;
+}
+
+ast_exp *
+ast_exp_elem_new (ast_tok tok)
+{
+  ast_exp_elem *exp = mem_malloc (sizeof (ast_exp_elem));
+  ast_exp *base = &exp->base;
+  base->pos = tok.pos;
+  base->type = NULL;
+
+  switch (tok.kind)
+    {
+    case ID:
+      base->kind = AST_EXP_ELEM_ID;
+      exp->str = tok.str;
+      break;
+    case NUM:
+      base->kind = AST_EXP_ELEM_NUM;
+      exp->num = tok.num;
+    case STR:
+      base->kind = AST_EXP_ELEM_STR;
+      exp->str = tok.str;
+    case REAL:
+      base->kind = AST_EXP_ELEM_REAL;
+      exp->real = tok.real;
+      break;
+    }
+
   return base;
 }

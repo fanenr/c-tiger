@@ -22,7 +22,9 @@ extern ast_env *ast_env_push_def (ast_env *env, ast_def *def);
 /*                             type new                             */
 /* **************************************************************** */
 
-extern ast_type *ast_type_new (ast_type *origin, ast_tok tok);
+extern ast_type *ast_type1_new (ast_tok name);
+
+extern ast_type *ast_type2_new (ast_type *ref);
 
 /* **************************************************************** */
 /*                             def new                              */
@@ -30,7 +32,7 @@ extern ast_type *ast_type_new (ast_type *origin, ast_tok tok);
 
 extern ast_def *ast_def_var_new (ast_tok name, ast_type *type);
 
-extern ast_def *ast_def_type_new (ast_tok name, ast_type *origin);
+extern ast_def *ast_def_type_new (ast_tok name, ast_type *type);
 
 extern ast_def *ast_def_type_union_new (ast_tok name, ast_env *env);
 
@@ -52,8 +54,9 @@ extern ast_stm *ast_stm_assign_new (ast_exp *obj, ast_exp *val);
 
 extern ast_stm *ast_stm_while_new (ast_exp *cond, ast_env *env);
 
-extern ast_stm *ast_stm_if_new (ast_exp *cond, ast_env *then_env,
-                                ast_env *else_env);
+extern ast_stm *ast_stm_if1_new (ast_exp *cond, ast_env *then_env);
+
+extern ast_stm *ast_stm_if2_new (ast_stm *base, ast_env *else_env);
 
 /* **************************************************************** */
 /*                             exp new                              */

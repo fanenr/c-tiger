@@ -39,11 +39,11 @@ extern void yyerror(const char *msg);
 %left LPAREN
 
 %type <ptr>
-      stm def exp type bloc
-      stm_return stm_assign stm_while stm_if
+      def exp stm type type1 type2 bloc
       def_var def_type def_func def_func_parm
       exp_elem exp_paren exp_unary exp_binary
       exp_call exp_call_args exp_unary_mem exp_unary_math
+      stm_return stm_assign stm_while stm_if stm_if1 stm_if2
       exp_binary_mem exp_binary_bit exp_binary_math exp_binary_logic
 
 %start prog
@@ -57,10 +57,20 @@ prog
     ;
 
 type
+    : type1
+      { $$ = $1; }
+    | type2
+      { $$ = $1; }
+    ;
+
+type1
     : ID
-      { $$ = ast_type_new (0, $1);  }
-    | TIMES type
-      { $$ = ast_type_new ($2, $1); }
+      { $$ = ast_type1_new ($1);  }
+    ;
+
+type2
+    : TIMES type1
+      { POS ($1); $$ = ast_type2_new ($2); }
     ;
 
 bloc
@@ -136,14 +146,24 @@ stm_assign
 
 stm_while
     : WHILE LPAREN exp RPAREN LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_stm_while_new ($3, $6);   }
+      { POS ($1); $$ = ast_stm_while_new ($3, $6); }
     ;
 
 stm_if
+    : stm_if1
+      { $$ = $1; }
+    | stm_if2
+      { $$ = $1; }
+    ;
+
+stm_if1
     : IF LPAREN exp RPAREN LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_stm_if_new ($3, $6, 0);   }
-    | IF LPAREN exp RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE
-      { POS ($1); $$ = ast_stm_if_new ($3, $6, $10); }
+      { POS ($1); $$ = ast_stm_if1_new ($3, $6); }
+    ;
+
+stm_if2
+    : stm_if1 ELSE LBRACE bloc RBRACE
+      { $$ = ast_stm_if2_nwe ($1, $4); }
     ;
 
 exp

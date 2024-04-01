@@ -208,29 +208,29 @@ struct ast_stm
 struct ast_stm_return
 {
   ast_stm base;
-  ast_exp *val;
+  ast_exp *val; /* return value */
 };
 
 struct ast_stm_assign
 {
   ast_stm base;
-  ast_exp *obj;
-  ast_exp *val;
+  ast_exp *obj; /* assign object */
+  ast_exp *val; /* assign value */
 };
 
 struct ast_stm_while
 {
   ast_stm base;
-  ast_env *env;
-  ast_exp *cond;
+  ast_env *env;  /* while body */
+  ast_exp *cond; /* while condition */
 };
 
 struct ast_stm_if
 {
   ast_stm base;
-  ast_exp *cond;
-  ast_env *then_env;
-  ast_env *else_env;
+  ast_exp *cond;     /* if condition */
+  ast_env *then_env; /* then body */
+  ast_env *else_env; /* else body */
 };
 
 /* **************************************************************** */
@@ -239,9 +239,9 @@ struct ast_stm_if
 
 struct ast_exp
 {
-  int kind;
-  ast_pos pos;
-  ast_type *type;
+  int kind;       /* kind of exp */
+  ast_pos pos;    /* pos in source code */
+  ast_type *type; /* type of exp */
 };
 
 struct ast_exp_elem
@@ -249,17 +249,17 @@ struct ast_exp_elem
   ast_exp base;
   union
   {
-    long num;
-    mstr_t str;
-    double real;
-    ast_def_var *var;
+    long num;         /* integer-literal */
+    mstr_t str;       /* string-literal */
+    double real;      /* real-literal */
+    ast_def_var *var; /* variable */
   };
 };
 
 struct ast_exp_call
 {
-  array_t *args;
-  ast_def_func *func;
+  array_t *args;      /* args */
+  ast_def_func *func; /* target  */
 };
 
 struct ast_exp_unary
