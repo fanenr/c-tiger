@@ -7,7 +7,7 @@
 id                    [a-zA-Z_][a-zA-Z0-9_]*
 real                  [0-9]+\.[0-9]+
 str                   \"[^"\n]*\"
-num                   [0-9]+
+int                   [0-9]+
 
 %%
 if                    { ADJ (); RET (IF     ); }
@@ -21,8 +21,8 @@ struct                { ADJ (); RET (STRUCT ); }
 return                { ADJ (); RET (RETURN ); }
 
 {id}                  { ADJ (); RET (ID     ); }
-{num}                 { ADJ (); RET (NUM    ); }
 {str}                 { ADJ (); RET (STR    ); }
+{int}                 { ADJ (); RET (INT    ); }
 {real}                { ADJ (); RET (REAL   ); }
                                                 
 "="                   { ADJ (); RET (EQ     ); }

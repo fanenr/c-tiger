@@ -10,7 +10,7 @@ extern void yyerror(const char *msg);
          ast_tok tok;
        }
 
-%token <tok> NUM
+%token <tok> INT
 %token <tok> REAL
 %token <tok> ID STR
 %token <tok>
@@ -192,7 +192,7 @@ exp
 exp_elem
     : ID
       { $$ = ast_exp_elem_new ($1); }
-    | NUM
+    | INT
       { $$ = ast_exp_elem_new ($1); }
     | STR
       { $$ = ast_exp_elem_new ($1); }

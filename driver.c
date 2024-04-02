@@ -3,7 +3,6 @@
 #include "common.h"
 #include "mstr.h"
 #include "parser.h"
-#include "sema.h"
 
 #include "tiger.y.h"
 #include "util.h"
@@ -31,8 +30,6 @@ main (int argc, char **argv)
   ast_prog_init ();
 
   yyparse ();
-
-  sema_check (&prog);
 
   printf ("prog\n");
   print (&prog, 1);

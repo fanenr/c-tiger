@@ -11,7 +11,7 @@ CFLAGS   = $(WARN) $(NOWARN) $(OPT_LEVEL) $(DBG_CFLAGS) $(LTO_CFLAGS) \
           $(CSTD) $(ASAN_CFLAGS)
 LDFLAGS  = $(DBG_LDFLAGS) $(LTO_LDFLAGS) $(ASAN_LDFLAGS)
 
-src := driver.c sema.c parser.c ast.c lexer.c \
+src := driver.c parser.c lexer.c \
        mstr.c array.c rbtree.c \
        tiger.l.c tiger.y.c
 obj := $(src:%.c=%.o)

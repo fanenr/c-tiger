@@ -9,7 +9,6 @@ enum
   AST_TYPE_ST,
   AST_TYPE_BASE_ST,
   AST_TYPE_VOID,
-  AST_TYPE_BOOL,
   AST_TYPE_INT8,
   AST_TYPE_INT16,
   AST_TYPE_INT32,
@@ -41,9 +40,9 @@ enum
 
   AST_EXP_ST,
   AST_EXP_ELEM_ST,
-  AST_EXP_ELEM_ID,
-  AST_EXP_ELEM_NUM,
+  AST_EXP_ELEM_VAR,
   AST_EXP_ELEM_STR,
+  AST_EXP_ELEM_INT,
   AST_EXP_ELEM_REAL,
   AST_EXP_ELEM_ED,
   AST_EXP_UN_ST,
@@ -108,10 +107,6 @@ typedef struct ast_exp_call ast_exp_call;
 typedef struct ast_exp_unary ast_exp_unary;
 typedef struct ast_exp_binary ast_exp_binary;
 
-extern ast_env prog;
-extern const char *base_type_name[];
-extern const unsigned base_type_size[];
-
 /* **************************************************************** */
 /*                             ast pos                              */
 /* **************************************************************** */
@@ -156,7 +151,6 @@ struct ast_type
   unsigned size; /* size of type */
   union
   {
-    mstr_t name;   /* for undetermined type */
     ast_env *mem;  /* for union or struct */
     ast_type *ref; /* for pointer */
   };
@@ -169,7 +163,6 @@ struct ast_type
 struct ast_def
 {
   int kind;    /* kind of def */
-  int index;   /* index in env */
   ast_pos pos; /* pos in source code */
   mstr_t name; /* name of def */
 };
@@ -201,7 +194,6 @@ struct ast_def_func
 struct ast_stm
 {
   int kind;    /* kind of stm */
-  int index;   /* index in env */
   ast_pos pos; /* pos in source code */
 };
 
@@ -265,15 +257,23 @@ struct ast_exp_call
 struct ast_exp_unary
 {
   ast_exp base;
-  ast_exp *exp;
+  ast_exp *exp; /* operand */
 };
 
 struct ast_exp_binary
 {
   ast_exp base;
-  ast_exp *exp1;
-  ast_exp *exp2;
+  ast_exp *exp1; /* operand1 */
+  ast_exp *exp2; /* operand2 */
 };
+
+/* **************************************************************** */
+/*                              global                              */
+/* **************************************************************** */
+
+extern ast_env prog;
+extern ast_type base_type[];
+extern const char *base_type_name[];
 
 /* **************************************************************** */
 /*                               util                               */

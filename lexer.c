@@ -43,18 +43,18 @@ lexer_ret (int kind)
 
   switch (kind)
     {
-    case REAL:
-      yylval.tok.real = conv_atod (yytext);
-      break;
-    case NUM:
-      yylval.tok.num = conv_atol (yytext);
-      break;
-    case STR:
     case ID:
+    case STR:
       {
         mstr_init (str);
         mstr_assign_cstr (str, yytext);
       }
+      break;
+    case INT:
+      yylval.tok.num = conv_atol (yytext);
+      break;
+    case REAL:
+      yylval.tok.real = conv_atod (yytext);
       break;
     }
 
