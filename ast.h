@@ -123,9 +123,9 @@ struct ast_tok
   ast_pos pos; /* pos in source code */
   union
   {
-    long num;    /* for integer */
-    mstr_t str;  /* for tok and string-literal */
-    double real; /* for real number */
+    int integer;    /* integer-literal */
+    mstr_t string;  /* tok or string-literal */
+    double realnum; /* real-literal */
   };
 };
 
@@ -194,7 +194,6 @@ struct ast_def_func
 struct ast_stm
 {
   int kind;    /* kind of stm */
-  ast_pos pos; /* pos in source code */
 };
 
 struct ast_stm_return
@@ -241,10 +240,10 @@ struct ast_exp_elem
   ast_exp base;
   union
   {
-    long num;         /* integer-literal */
-    mstr_t str;       /* string-literal */
-    double real;      /* real-literal */
-    ast_def_var *var; /* variable */
+    int integer;            /* integer-literal */
+    mstr_t string;          /* string-literal */
+    double realnum;         /* real-literal */
+    ast_def_var *reference; /* variable */
   };
 };
 

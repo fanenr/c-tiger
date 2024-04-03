@@ -10,11 +10,12 @@
 #include "mstr_mem.h"
 #endif
 
-#define is_sso(STR) ((STR)->sso.flg)
+#define is_sso(STR) ((STR)->sso.flg == MSTR_FLG_SSO)
+#define is_heap(STR) ((STR)->sso.flg == MSTR_FLG_HEAP)
 
-#define get_len(STR) (!is_sso (STR) ? (STR)->heap.len : (STR)->sso.len)
-#define get_cap(STR) (!is_sso (STR) ? (STR)->heap.cap : MSTR_SSO_MAXCAP)
-#define get_data(STR) (!is_sso (STR) ? (STR)->heap.data : (STR)->sso.data)
+#define cap_of(STR) (is_heap (STR) ? (STR)->heap.cap : MSTR_SSO_CAP)
+#define len_of(STR) (is_heap (STR) ? (STR)->heap.len : (STR)->sso.len)
+#define data_of(STR) (is_heap (STR) ? (STR)->heap.data : (STR)->sso.data)
 
 #define set_len(STR, LEN)                                                     \
   do                                                                          \
@@ -29,13 +30,13 @@
 void
 mstr_init (mstr_t *str)
 {
-  *str = (mstr_t)(mstr_sso_t){ .flg = true };
+  *str = (mstr_t)(mstr_sso_t){ .flg = MSTR_FLG_SSO };
 }
 
 void
 mstr_free (mstr_t *str)
 {
-  if (!is_sso (str))
+  if (is_heap (str))
     mstr_mem_free (str->heap.data);
   mstr_init (str);
 }
@@ -43,27 +44,27 @@ mstr_free (mstr_t *str)
 size_t
 mstr_cap (const mstr_t *str)
 {
-  return get_cap (str);
+  return cap_of (str);
 }
 
 size_t
 mstr_len (const mstr_t *str)
 {
-  return get_len (str);
+  return len_of (str);
 }
 
 const char *
 mstr_data (const mstr_t *str)
 {
-  return get_data (str);
+  return data_of (str);
 }
 
 int
 mstr_at (const mstr_t *str, size_t pos)
 {
-  if (pos >= get_len (str))
+  if (pos >= len_of (str))
     return -1;
-  return get_data (str)[pos];
+  return data_of (str)[pos];
 }
 
 char *
@@ -81,40 +82,44 @@ mstr_release (mstr_t *str)
 mstr_t *
 mstr_reserve (mstr_t *dest, size_t cap)
 {
-  bool flg = is_sso (dest);
-  if (flg && cap <= MSTR_SSO_MAXCAP)
+  char *newdata;
+  size_t newcap;
+
+  if ((newcap = cap_of (dest)) >= cap)
     return dest;
-  if (!flg && cap <= dest->heap.cap)
-    return dest;
 
-  size_t ncap = MSTR_INIT_CAP;
-  if (!flg && dest->heap.cap > ncap)
-    ncap = dest->heap.cap;
+  /* compute capacity */
+  if (newcap == MSTR_SSO_CAP)
+    newcap++;
 
-  /* compute the capacity to allocate */
-  while (ncap < cap)
-    ncap *= MSTR_EXPAN_RATIO;
+  while (newcap < cap)
+    newcap *= MSTR_EXPAN_RATIO;
 
-  char *data = flg ? mstr_mem_malloc (ncap)
-                   : mstr_mem_realloc (dest->heap.data, ncap);
-  if (data == NULL)
-    /* malloc failed */
-    return NULL;
-
-  if (flg)
+  if (is_heap (dest))
     {
-      /* copy sso mstr into heap */
-      if (memcpy (data, dest->sso.data, dest->sso.len + 1) != data)
+      newdata = mstr_mem_realloc (dest->heap.data, newcap);
+      if (!newdata)
+        return NULL;
+    }
+  else
+    {
+      if (!(newdata = mstr_mem_malloc (newcap)))
+        return NULL;
+
+      /* copy to heap */
+      size_t len = dest->sso.len;
+      if (memcpy (newdata, dest->sso.data, len + 1) != newdata)
         { /* copy failed */
-          mstr_mem_free (data);
+          mstr_mem_free (newdata);
           return NULL;
         }
-      /* save the length of sso mstr */
-      dest->heap.len = dest->sso.len;
+
+      /* save length */
+      dest->heap.len = len;
     }
 
-  dest->heap.data = data;
-  dest->heap.cap = ncap;
+  dest->heap.data = newdata;
+  dest->heap.cap = newcap;
   return dest;
 }
 
@@ -124,7 +129,9 @@ mstr_remove (mstr_t *dest, size_t spos, size_t slen)
   if (!slen)
     return dest;
 
-  size_t len = get_len (dest);
+  size_t len = len_of (dest);
+  char *data = data_of (dest);
+
   if (spos >= len)
     /* out of range */
     return NULL;
@@ -132,10 +139,10 @@ mstr_remove (mstr_t *dest, size_t spos, size_t slen)
   if (slen > len - spos)
     slen = len - spos;
 
-  char *data = get_data (dest);
   char *rmst = data + spos;
   char *cpst = rmst + slen;
   size_t cplen = len - spos - slen + 1;
+
   if (memmove (rmst, cpst, cplen) != rmst)
     /* move failed */
     return NULL;
@@ -164,7 +171,9 @@ mstr_move (mstr_t *dest, mstr_t *src)
 mstr_t *
 mstr_substr (mstr_t *dest, const mstr_t *src, size_t spos, size_t slen)
 {
-  size_t len = get_len (src);
+  size_t len = len_of (src);
+  const char *pos = data_of (src) + spos;
+
   if (spos >= len)
     /* out of range */
     return NULL;
@@ -172,7 +181,6 @@ mstr_substr (mstr_t *dest, const mstr_t *src, size_t spos, size_t slen)
   if (slen > len - spos)
     slen = len - spos;
 
-  const char *pos = get_data (src) + spos;
   return mstr_assign_byte (dest, (const mstr_byte_t *)pos, slen);
 }
 
@@ -191,17 +199,17 @@ mstr_start_with_cstr (const mstr_t *str, const char *src)
 bool
 mstr_start_with_mstr (const mstr_t *str, const mstr_t *src)
 {
-  return mstr_start_with_byte (str, (const mstr_byte_t *)get_data (src),
-                               get_len (src));
+  return mstr_start_with_byte (str, (const mstr_byte_t *)data_of (src),
+                               len_of (src));
 }
 
 bool
 mstr_start_with_byte (const mstr_t *str, const mstr_byte_t *src, size_t slen)
 {
-  if (slen > get_len (str))
+  if (slen > len_of (str))
     return false;
 
-  return memcmp (get_data (str), src, slen);
+  return memcmp (data_of (str), src, slen) == 0;
 }
 
 bool
@@ -219,18 +227,18 @@ mstr_end_with_cstr (const mstr_t *str, const char *src)
 bool
 mstr_end_with_mstr (const mstr_t *str, const mstr_t *src)
 {
-  return mstr_end_with_byte (str, (const mstr_byte_t *)get_data (src),
-                             get_len (src));
+  return mstr_end_with_byte (str, (const mstr_byte_t *)data_of (src),
+                             len_of (src));
 }
 
 bool
 mstr_end_with_byte (const mstr_t *str, const mstr_byte_t *src, size_t slen)
 {
-  if (slen > get_len (str))
+  if (slen > len_of (str))
     return false;
 
-  const char *data = get_data (str) + get_len (str) - slen;
-  return memcmp (data, src, slen);
+  const char *pos = data_of (str) + len_of (str) - slen;
+  return memcmp (pos, src, slen) == 0;
 }
 
 int
@@ -242,19 +250,18 @@ mstr_cmp_cstr (const mstr_t *str, const char *src)
 int
 mstr_cmp_mstr (const mstr_t *str, const mstr_t *src)
 {
-  return mstr_cmp_byte (str, (const mstr_byte_t *)get_data (src),
-                        get_len (src));
+  return mstr_cmp_byte (str, (const mstr_byte_t *)data_of (src), len_of (src));
 }
 
 int
 mstr_cmp_byte (const mstr_t *str, const mstr_byte_t *src, size_t slen)
 {
-  size_t len = get_len (str);
-  const char *data = get_data (str);
-  int cmp = memcmp (data, src, slen > len ? len : slen);
+  size_t len = len_of (str);
+  const char *data = data_of (str);
+  int cmp_ret = memcmp (data, src, slen > len ? len : slen);
 
-  if (cmp != 0 || slen == len)
-    return cmp;
+  if (cmp_ret != 0 || slen == len)
+    return cmp_ret;
   return len > slen ? 1 : -1;
 }
 
@@ -273,8 +280,8 @@ mstr_cat_cstr (mstr_t *dest, const char *src)
 mstr_t *
 mstr_cat_mstr (mstr_t *dest, const mstr_t *src)
 {
-  return mstr_cat_byte (dest, (const mstr_byte_t *)get_data (src),
-                        get_len (src));
+  return mstr_cat_byte (dest, (const mstr_byte_t *)data_of (src),
+                        len_of (src));
 }
 
 mstr_t *
@@ -283,12 +290,12 @@ mstr_cat_byte (mstr_t *dest, const mstr_byte_t *src, size_t slen)
   if (!slen)
     return dest;
 
-  size_t len = get_len (dest);
+  size_t len = len_of (dest);
   if (mstr_reserve (dest, len + slen + 1) != dest)
     /* allocate failed */
     return NULL;
 
-  char *ctpos = get_data (dest) + len;
+  char *ctpos = data_of (dest) + len;
   if (memcpy (ctpos, src, slen) != ctpos)
     /* copy failed */
     return NULL;
@@ -314,8 +321,8 @@ mstr_assign_cstr (mstr_t *dest, const char *src)
 mstr_t *
 mstr_assign_mstr (mstr_t *dest, const mstr_t *src)
 {
-  return mstr_assign_byte (dest, (const mstr_byte_t *)get_data (src),
-                           get_len (src));
+  return mstr_assign_byte (dest, (const mstr_byte_t *)data_of (src),
+                           len_of (src));
 }
 
 mstr_t *
@@ -323,7 +330,7 @@ mstr_assign_byte (mstr_t *dest, const mstr_byte_t *src, size_t slen)
 {
   if (!slen)
     {
-      get_data (dest)[0] = '\0';
+      data_of (dest)[0] = '\0';
       set_len (dest, 0);
       return dest;
     }
@@ -332,7 +339,7 @@ mstr_assign_byte (mstr_t *dest, const mstr_byte_t *src, size_t slen)
     /* allocate failed */
     return NULL;
 
-  char *data = get_data (dest);
+  char *data = data_of (dest);
   if (memcpy (data, src, slen) != data)
     /* copy failed */
     return NULL;

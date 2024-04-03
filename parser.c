@@ -17,7 +17,6 @@ ast_env prog;
 
 static ast_pos m_pos;
 static ast_env *m_env;
-static unsigned func_parms;
 
 ast_type base_type[] = {
   [AST_TYPE_VOID] = { .kind = AST_TYPE_VOID, .size = sizeof (void) },
@@ -36,6 +35,12 @@ ast_type base_type[] = {
   [AST_TYPE_DOUBLE] = { .kind = AST_TYPE_DOUBLE, .size = sizeof (double) },
 };
 
+ast_type base_type_string = {
+  .kind = AST_TYPE_POINTER,
+  .size = sizeof (uint8_t *),
+  .ref = &base_type[AST_TYPE_UINT8],
+};
+
 const char *base_type_name[] = {
   [AST_TYPE_VOID] = "void",
 
@@ -49,8 +54,8 @@ const char *base_type_name[] = {
 };
 
 static void array_expand (array_t *arr);
-static void ast_env_push_stm (ast_stm *stm);
-static void ast_env_push_def (ast_def *def);
+static void menv_push_stm (ast_stm *base);
+static void menv_push_def (ast_def *base);
 static int defs_name_comp (const void *a, const void *b);
 
 void
@@ -71,63 +76,73 @@ ast_prog_init (void)
       ast_def_type *def = mem_malloc (sizeof (ast_def_type));
       ast_def *base = &def->base;
       mstr_t *name = &base->name;
-      def->type = &base_type[i];
+
       base->kind = AST_DEF_TYPE;
       base->pos = m_pos;
 
-      *name = MSTR_INIT;
+      mstr_init (name);
       mstr_assign_cstr (name, base_type_name[i]);
 
-      ast_env_push_def (base);
+      def->type = &base_type[i];
+
+      menv_push_def (base);
     }
 }
 
-void
+ast_env *
 ast_env_new (void)
 {
-  ast_env *new = mem_malloc (sizeof (ast_env));
+  ast_env *env = mem_malloc (sizeof (ast_env));
 
-  new->defs = (array_t){ .elem_size = sizeof (ast_def *) };
-  new->stms = (array_t){ .elem_size = sizeof (ast_stm *) };
-  new->outer = m_env;
+  env->defs = (array_t){ .elem_size = sizeof (ast_def *) };
+  env->stms = (array_t){ .elem_size = sizeof (ast_stm *) };
+  env->outer = m_env;
 
-  m_env = new;
+  return (m_env = env);
+}
+
+ast_env *
+ast_env_end (void)
+{
+  ast_env *env = m_env;
+
+  m_env = env->outer;
+
+  return env;
 }
 
 static inline void
-ast_env_push_stm (ast_stm *stm)
+menv_push_stm (ast_stm *base)
 {
   array_t *stms = &m_env->stms;
-  array_t *defs = &m_env->defs;
   array_expand (stms);
 
   ast_stm **inpos = array_push_back (stms);
-  *inpos = stm;
+  *inpos = base;
 }
 
 static inline void
-ast_env_push_def (ast_def *def)
+menv_push_def (ast_def *base)
 {
   array_t *defs = &m_env->defs;
-  array_t *stms = &m_env->stms;
   array_expand (defs);
 
   ast_def **defined;
-  if ((defined = array_find (defs, &def, defs_name_comp)))
+  if ((defined = array_find (defs, &base, defs_name_comp)))
     {
       ast_pos pos = (*defined)->pos;
-      ast_error (def->pos, "%s has been defined here %d:%d",
-                 mstr_data (&def->name), pos.ln, pos.ch);
+      ast_error (base->pos, "%s has been defined here %d:%d",
+                 mstr_data (&base->name), pos.ln, pos.ch);
     }
 
   ast_def **inpos = array_push_back (defs);
-  *inpos = def;
+  *inpos = base;
 }
 
 static inline ast_def *
-ast_env_find_def (const mstr_t *name)
+env_find_def (ast_env *env, const mstr_t *name)
 {
-  for (ast_env *env = m_env; env; env = m_env->outer)
+  for (; env; env = env->outer)
     {
       array_t *defs = &env->defs;
       for (size_t i = defs->size; i; i--)
@@ -143,9 +158,9 @@ ast_env_find_def (const mstr_t *name)
 ast_type *
 ast_type1_new (ast_tok name)
 {
-  ast_def *base = ast_env_find_def (&name.str);
+  ast_def *base = env_find_def (m_env, &name.string);
   if (!base || base->kind != AST_DEF_TYPE)
-    ast_error (name.pos, "use undefined type %s", mstr_data (&name.str));
+    ast_error (name.pos, "use undefined type %s", mstr_data (&name.string));
   ast_def_type *def = container_of (base, ast_def_type, base);
   return def->type;
 }
@@ -166,12 +181,17 @@ ast_def_var_new (ast_tok name, ast_type *type)
 {
   ast_def_var *def = mem_malloc (sizeof (ast_def_var));
   ast_def *base = &def->base;
+
   base->kind = AST_DEF_VAR;
-  base->name = name.str;
-  base->pos = m_pos;
+  base->name = name.string;
+  base->pos = name.pos;
+
   def->type = type;
 
-  ast_env_push_def (base);
+  if (type->kind == AST_TYPE_VOID)
+    ast_error (name.pos, "variable type can not be void");
+
+  menv_push_def (base);
 }
 
 void
@@ -179,41 +199,40 @@ ast_def_type_new (ast_tok name, ast_type *type)
 {
   ast_def_type *def = mem_malloc (sizeof (ast_def_type));
   ast_def *base = &def->base;
-  base->kind = AST_DEF_TYPE;
-  base->name = name.str;
-  base->pos = m_pos;
 
-  if (type->kind == AST_TYPE_VOID)
-    ast_error (type->pos, "variable type can not be void");
+  base->kind = AST_DEF_TYPE;
+  base->name = name.string;
+  base->pos = name.pos;
 
   def->type = type;
 
-  ast_env_push_def (base);
+  menv_push_def (base);
 }
 
 static unsigned union_size;
 
 void
-ast_def_union_new (ast_tok name)
+ast_def_union_new (ast_tok name, ast_env *env)
 {
   ast_def_type *def = mem_malloc (sizeof (ast_def_type));
-  ast_def *base = &def->base;
-  base->kind = AST_DEF_TYPE;
-  base->name = name.str;
-  base->pos = m_pos;
-
   ast_type *type = mem_malloc (sizeof (ast_type));
+  ast_def *base = &def->base;
+
+  base->kind = AST_DEF_TYPE;
+  base->name = name.string;
+  base->pos = name.pos;
+
+  def->type = type;
+
   type->kind = AST_TYPE_UNION;
-  type->pos = m_pos;
-  type->mem = m_env;
+  type->pos = name.pos;
+  type->mem = env;
 
-  if (m_env->stms.size != 0)
-    {
-      ast_stm *base = *(ast_stm **)array_at (&m_env->stms, 0);
-      ast_error (base->pos, "statement can not be here");
-    }
+  array_t *stms = &env->stms;
+  if (stms->size != 0)
+    ast_error (name.pos, "statement can not be here");
 
-  array_t *defs = &m_env->defs;
+  array_t *defs = &env->defs;
   for (size_t i = defs->size; i; i--)
     {
       ast_def *base = *(ast_def **)array_at (defs, i - 1);
@@ -221,8 +240,10 @@ ast_def_union_new (ast_tok name)
         {
         case AST_DEF_FUNC:
           ast_error (base->pos, "function can not be here");
+
         case AST_DEF_TYPE:
           break;
+
         case AST_DEF_VAR:
           {
             ast_def_var *def = container_of (base, ast_def_var, base);
@@ -235,36 +256,35 @@ ast_def_union_new (ast_tok name)
     }
 
   type->size = union_size;
-  m_env = m_env->outer;
-  def->type = type;
-  union_size = 0;
 
-  ast_env_push_def (base);
+  union_size = 0;
+  menv_push_def (base);
 }
 
 static unsigned struct_size;
 
 void
-ast_def_struct_new (ast_tok name)
+ast_def_struct_new (ast_tok name, ast_env *env)
 {
   ast_def_type *def = mem_malloc (sizeof (ast_def_type));
-  ast_def *base = &def->base;
-  base->kind = AST_DEF_TYPE;
-  base->name = name.str;
-  base->pos = m_pos;
-
   ast_type *type = mem_malloc (sizeof (ast_type));
+  ast_def *base = &def->base;
+
+  base->kind = AST_DEF_TYPE;
+  base->name = name.string;
+  base->pos = name.pos;
+
+  def->type = type;
+
   type->kind = AST_TYPE_STRUCT;
-  type->pos = m_pos;
-  type->mem = m_env;
+  type->pos = name.pos;
+  type->mem = env;
 
-  if (m_env->stms.size != 0)
-    {
-      ast_stm *base = *(ast_stm **)array_at (&m_env->stms, 0);
-      ast_error (base->pos, "statement can not be here");
-    }
+  array_t *stms = &env->stms;
+  if (stms->size != 0)
+    ast_error (name.pos, "statement can not be here");
 
-  array_t *defs = &m_env->defs;
+  array_t *defs = &env->defs;
   for (size_t i = defs->size; i; i--)
     {
       ast_def *base = *(ast_def **)array_at (defs, i - 1);
@@ -272,8 +292,10 @@ ast_def_struct_new (ast_tok name)
         {
         case AST_DEF_FUNC:
           ast_error (base->pos, "function can not be here");
+
         case AST_DEF_TYPE:
           break;
+
         case AST_DEF_VAR:
           {
             ast_def_var *def = container_of (base, ast_def_var, base);
@@ -285,44 +307,36 @@ ast_def_struct_new (ast_tok name)
     }
 
   type->size = struct_size;
-  m_env = m_env->outer;
-  def->type = type;
-  struct_size = 0;
 
-  ast_env_push_def (base);
+  struct_size = 0;
+  menv_push_def (base);
 }
+
+static unsigned func_parms;
 
 void
 ast_func_parm_new (ast_tok name, ast_type *type)
 {
-  ast_def_var *def = mem_malloc (sizeof (ast_def_var));
-  ast_def *base = &def->base;
-  base->kind = AST_DEF_VAR;
-  base->name = name.str;
-  base->pos = name.pos;
-  def->type = type;
-
+  ast_def_var_new (name, type);
   func_parms++;
-  ast_env_push_def (base);
 }
 
 void
-ast_def_func_new (ast_tok name, ast_type *type)
+ast_def_func_new (ast_tok name, ast_type *type, ast_env *env)
 {
   ast_def_func *def = mem_malloc (sizeof (ast_def_func));
   ast_def *base = &def->base;
+
   base->kind = AST_DEF_FUNC;
-  base->name = name.str;
-  base->pos = m_pos;
+  base->name = name.string;
+  base->pos = name.pos;
 
   def->parms = func_parms;
   def->type = type;
-  def->env = m_env;
+  def->env = env;
 
-  m_env = m_env->outer;
   func_parms = 0;
-
-  ast_env_push_def (base);
+  menv_push_def (base);
 }
 
 void
@@ -330,11 +344,12 @@ ast_stm_return_new (ast_exp *val)
 {
   ast_stm_return *stm = mem_malloc (sizeof (ast_stm_return));
   ast_stm *base = &stm->base;
+
   base->kind = AST_STM_RETURN;
-  base->pos = m_pos;
+
   stm->val = val;
 
-  ast_env_push_stm (base);
+  menv_push_stm (base);
 }
 
 void
@@ -342,52 +357,42 @@ ast_stm_assign_new (ast_exp *obj, ast_exp *val)
 {
   ast_stm_assign *stm = mem_malloc (sizeof (ast_stm_assign));
   ast_stm *base = &stm->base;
+
   base->kind = AST_STM_ASSIGN;
-  base->pos = obj->pos;
+
   stm->obj = obj;
   stm->val = val;
 
-  ast_env_push_stm (base);
+  menv_push_stm (base);
 }
 
 void
-ast_stm_while_new (ast_exp *cond)
+ast_stm_while_new (ast_exp *cond, ast_env *env)
 {
   ast_stm_while *stm = mem_malloc (sizeof (ast_stm_while));
   ast_stm *base = &stm->base;
+
   base->kind = AST_STM_WHILE;
-  base->pos = m_pos;
 
   stm->cond = cond;
-  stm->env = m_env;
+  stm->env = env;
 
-  m_env = m_env->outer;
-  ast_env_push_stm (base);
+  menv_push_stm (base);
 }
 
 void
-ast_stm_if1_new (ast_exp *cond)
+ast_stm_if_new (ast_exp *cond, ast_env *then_env, ast_env *else_env)
 {
   ast_stm_if *stm = mem_malloc (sizeof (ast_stm_if));
   ast_stm *base = &stm->base;
-  base->kind = AST_STM_IF;
-  base->pos = m_pos;
 
-  stm->then_env = m_env;
-  stm->else_env = NULL;
+  base->kind = AST_STM_IF;
+
+  stm->then_env = then_env;
+  stm->else_env = else_env;
   stm->cond = cond;
 
-  m_env = m_env->outer;
-  ast_env_push_stm (base);
-}
-
-void
-ast_stm_if2_new (void)
-{
-  ast_stm *base = *(ast_stm **)array_at (&m_env->stms, m_env->stms.size - 1);
-  ast_stm_if *stm = container_of (base, ast_stm_if, base);
-  stm->else_env = m_env;
-  m_env = m_env->outer;
+  menv_push_stm (base);
 }
 
 ast_exp *
@@ -401,30 +406,34 @@ ast_exp_elem_new (ast_tok tok)
     {
     case ID:
       {
-        ast_def *find_base = ast_env_find_def (&tok.str);
+        ast_def *find_base = env_find_def (m_env, &tok.string);
         if (!find_base || find_base->kind != AST_DEF_VAR)
           ast_error (tok.pos, "use undefined variable %s",
-                     mstr_data (&tok.str));
+                     mstr_data (&tok.string));
+
         ast_def_var *def = container_of (find_base, ast_def_var, base);
         base->kind = AST_EXP_ELEM_VAR;
         base->type = def->type;
-        exp->var = def;
+        exp->reference = def;
       }
       break;
+
     case STR:
-      base->type = NULL /* TODO: AST_TYPE_STR */;
+      base->type = &base_type_string;
       base->kind = AST_EXP_ELEM_STR;
-      exp->str = tok.str;
+      exp->string = tok.string;
       break;
+
     case INT:
       base->type = &base_type[AST_TYPE_INT32];
       base->kind = AST_EXP_ELEM_INT;
-      exp->num = tok.num;
+      exp->integer = tok.integer;
       break;
+
     case REAL:
       base->type = &base_type[AST_TYPE_DOUBLE];
       base->kind = AST_EXP_ELEM_REAL;
-      exp->real = tok.real;
+      exp->realnum = tok.realnum;
       break;
     }
 
@@ -465,7 +474,7 @@ ast_exp_unary_new (int kind, ast_exp *exp)
         zero_base->kind = AST_EXP_ELEM_INT;
         zero_base->type = exp->type;
         zero_base->pos = m_pos;
-        zero->num = 0;
+        zero->integer = 0;
 
         ast_exp_binary *ret = mem_malloc (sizeof (ast_exp_binary));
         ast_exp *ret_base = &ret->base;

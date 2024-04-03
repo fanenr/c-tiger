@@ -38,8 +38,8 @@ lexer_ret (int kind)
   yylval.tok.pos.ch = m_pos.ch - yyleng;
   yylval.tok.pos.ln = m_pos.ln;
   yylval.tok.kind = kind;
-  
-  mstr_t *str = &yylval.tok.str;
+
+  mstr_t *str = &yylval.tok.string;
 
   switch (kind)
     {
@@ -50,11 +50,13 @@ lexer_ret (int kind)
         mstr_assign_cstr (str, yytext);
       }
       break;
+
     case INT:
-      yylval.tok.num = conv_atol (yytext);
+      yylval.tok.integer = conv_atol (yytext);
       break;
+
     case REAL:
-      yylval.tok.real = conv_atod (yytext);
+      yylval.tok.realnum = conv_atod (yytext);
       break;
     }
 

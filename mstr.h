@@ -5,8 +5,10 @@
 #include <stddef.h>
 
 #define MSTR_EXPAN_RATIO 2
-#define MSTR_INIT_CAP (sizeof (mstr_t))
-#define MSTR_SSO_MAXCAP (sizeof (mstr_t) - 1)
+#define MSTR_SSO_CAP (sizeof (mstr_heap_t) - 1)
+
+#define MSTR_FLG_SSO 1
+#define MSTR_FLG_HEAP 0
 
 typedef union mstr_t mstr_t;
 typedef unsigned char mstr_byte_t;
@@ -24,7 +26,7 @@ struct mstr_sso_t
 {
   mstr_byte_t flg : 1;
   mstr_byte_t len : 7;
-  char data[sizeof (mstr_heap_t) - 1];
+  char data[MSTR_SSO_CAP];
 };
 
 union mstr_t
@@ -32,9 +34,6 @@ union mstr_t
   mstr_sso_t sso;
   mstr_heap_t heap;
 };
-
-#define MSTR_INIT                                                             \
-  (mstr_t) (mstr_sso_t) { .flg = true }
 
 extern void mstr_init (mstr_t *str) __attribute__ ((nonnull (1)));
 

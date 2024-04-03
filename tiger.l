@@ -56,7 +56,7 @@ return                { ADJ (); RET (RETURN ); }
 "||"                  { ADJ (); RET (LOR    ); }
                                                 
 [ \t]+                { ADJ ();                }
-#.*                   { ADJ ();                }
+"//".*                { ADJ ();                }
 \n                    { NLN ();                }
 .                     { OTR ();                }
 %%
