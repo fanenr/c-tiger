@@ -366,6 +366,20 @@ ast_stm_assign_new (ast_exp *obj, ast_exp *val)
   menv_push_stm (base);
 }
 
+static inline bool
+exp_is_integer (const ast_exp *exp)
+{
+  int kind = exp->kind;
+  return AST_TYPE_INT8 <= kind && kind <= AST_TYPE_UINT64;
+}
+
+static inline bool
+exp_is_number (const ast_exp *exp)
+{
+  int kind = exp->kind;
+  return AST_TYPE_INT8 <= kind && kind <= AST_TYPE_DOUBLE;
+}
+
 void
 ast_stm_while_new (ast_exp *cond, ast_env *env)
 {
@@ -376,6 +390,9 @@ ast_stm_while_new (ast_exp *cond, ast_env *env)
 
   stm->cond = cond;
   stm->env = env;
+
+  if (!exp_is_integer (cond))
+    ast_error (cond->pos, "while statement need a integer condition");
 
   menv_push_stm (base);
 }
@@ -391,6 +408,9 @@ ast_stm_if_new (ast_exp *cond, ast_env *then_env, ast_env *else_env)
   stm->then_env = then_env;
   stm->else_env = else_env;
   stm->cond = cond;
+
+  if (!exp_is_integer (cond))
+    ast_error (cond->pos, "if statement need a integer condition");
 
   menv_push_stm (base);
 }
@@ -411,10 +431,10 @@ ast_exp_elem_new (ast_tok tok)
           ast_error (tok.pos, "use undefined variable %s",
                      mstr_data (&tok.string));
 
-        ast_def_var *def = container_of (find_base, ast_def_var, base);
+        ast_type *type = container_of (find_base, ast_def_var, base)->type;
         base->kind = AST_EXP_ELEM_VAR;
-        base->type = def->type;
-        exp->reference = def;
+        exp->reference = find_base;
+        base->type = type;
       }
       break;
 
@@ -440,39 +460,25 @@ ast_exp_elem_new (ast_tok tok)
   return base;
 }
 
-static inline bool
-exp_is_integer (const ast_exp *exp)
-{
-  int kind = exp->kind;
-  return AST_TYPE_INT8 <= kind && kind <= AST_TYPE_UINT64;
-}
-
-static inline bool
-exp_is_number (const ast_exp *exp)
-{
-  int kind = exp->kind;
-  return AST_TYPE_INT8 <= kind && kind <= AST_TYPE_DOUBLE;
-}
-
 ast_exp *
-ast_exp_unary_new (int kind, ast_exp *exp)
+ast_exp_unary_new (int kind, ast_exp *base)
 {
   switch (kind)
     {
     case AST_EXP_UN_UPLUS:
-      if (!exp_is_number (exp))
+      if (!exp_is_number (base))
         ast_error (m_pos, "unary plus can only be used for number");
-      return exp;
+      return base;
 
     case AST_EXP_UN_UMINUS:
-      if (!exp_is_number (exp))
+      if (!exp_is_number (base))
         ast_error (m_pos, "unary minus can only be used for number");
       {
         ast_exp_elem *zero = mem_malloc (sizeof (ast_exp_elem));
         ast_exp *zero_base = &zero->base;
 
+        zero_base->type = &base_type[AST_TYPE_INT32];
         zero_base->kind = AST_EXP_ELEM_INT;
-        zero_base->type = exp->type;
         zero_base->pos = m_pos;
         zero->integer = 0;
 
@@ -480,23 +486,48 @@ ast_exp_unary_new (int kind, ast_exp *exp)
         ast_exp *ret_base = &ret->base;
 
         ret_base->kind = AST_EXP_BIN_MINUS;
-        ret_base->type = exp->type;
+        ret_base->type = base->type;
         ret_base->pos = m_pos;
         ret->exp1 = zero_base;
-        ret->exp2 = exp;
+        ret->exp2 = base;
 
         return ret_base;
       }
 
     case AST_EXP_UN_ADDR:
-      if (exp->kind != AST_EXP_ELEM_VAR)
+      if (base->kind != AST_EXP_ELEM_VAR)
         ast_error (m_pos, "address operator can only be used for variable");
-      break;
+      {
+        ast_exp_unary *ret = mem_malloc (sizeof (ast_exp_unary));
+        ast_type *type = mem_malloc (sizeof (ast_type));
+        ast_exp *ret_base = &ret->base;
+
+        type->kind = AST_TYPE_POINTER;
+        type->size = sizeof (void *);
+        type->pos = m_pos;
+
+        ret_base->kind = AST_EXP_UN_ADDR;
+        ret_base->type = type;
+        ret_base->pos = m_pos;
+        ret->exp = base;
+
+        return ret_base;
+      }
 
     case AST_EXP_UN_DREF:
-      if (exp->kind != AST_EXP_ELEM_VAR)
-        ast_error (m_pos, "address operator can only be used for variable");
-      break;
+      if (base->type->kind != AST_TYPE_POINTER)
+        ast_error (m_pos, "dereference operator can only be used for pointer");
+      {
+        ast_exp_unary *ret = mem_malloc (sizeof (ast_exp_unary));
+        ast_exp *ret_base = &ret->base;
+
+        ret_base->kind = AST_EXP_UN_ADDR;
+        ret_base->type = base->type->ref;
+        ret_base->pos = m_pos;
+        ret->exp = base;
+
+        return ret_base;
+      }
     }
 
   ast_error (m_pos, "use unknow unary operator");

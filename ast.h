@@ -193,7 +193,7 @@ struct ast_def_func
 
 struct ast_stm
 {
-  int kind;    /* kind of stm */
+  int kind; /* kind of stm */
 };
 
 struct ast_stm_return
@@ -240,10 +240,10 @@ struct ast_exp_elem
   ast_exp base;
   union
   {
-    int integer;            /* integer-literal */
-    mstr_t string;          /* string-literal */
-    double realnum;         /* real-literal */
-    ast_def_var *reference; /* variable */
+    int integer;        /* integer-literal */
+    mstr_t string;      /* string-literal */
+    double realnum;     /* real-literal */
+    ast_def *reference; /* variable */
   };
 };
 
