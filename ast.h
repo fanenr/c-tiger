@@ -249,8 +249,9 @@ struct ast_exp_elem
 
 struct ast_exp_call
 {
-  array_t *args;      /* args */
-  ast_def_func *func; /* target  */
+  ast_exp base;
+  array_t *args; /* args */
+  ast_def *func; /* target  */
 };
 
 struct ast_exp_unary

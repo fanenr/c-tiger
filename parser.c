@@ -536,6 +536,24 @@ ast_exp_unary_new (int kind, ast_exp *base)
 ast_exp *
 ast_exp_call_new (ast_tok name, array_t *args)
 {
+  ast_exp_call *exp = mem_malloc (sizeof (ast_exp_call));
+  ast_exp *base = &exp->base;
+
+  ast_def *func = env_find_def (m_env, &name.string);
+  if (!func || func->kind != AST_DEF_FUNC)
+    ast_error (name.pos, "call undefined function %s",
+               mstr_data (&name.string));
+
+  ast_type *type = container_of (func, ast_def_func, base)->type;
+
+  base->kind = AST_EXP_CALL;
+  base->pos = name.pos;
+  base->type = type;
+
+  exp->func = func;
+  exp->args = args;
+
+  return base;
 }
 
 array_t *
