@@ -65,6 +65,12 @@ set_parse_pos (ast_tok tok)
 }
 
 void
+parser_other (const char *msg)
+{
+  ast_error (m_pos, "unknow syntax: %s", msg);
+}
+
+void
 ast_prog_init (void)
 {
   prog.defs.elem_size = sizeof (ast_def *);
@@ -367,6 +373,31 @@ ast_stm_assign_new (ast_exp *obj, ast_exp *val)
 }
 
 static inline bool
+type_is_base (ast_type *type)
+{
+  int kind = type->kind;
+  return AST_TYPE_BASE_ST < kind && kind < AST_TYPE_BASE_ED;
+}
+
+static inline bool
+type_is_same (ast_type *a, ast_type *b)
+{
+  if (type_is_base (a) && type_is_base (b))
+    return a->kind == b->kind;
+
+  if (a->kind == AST_TYPE_UNION && b->kind == AST_TYPE_UNION)
+    return a->mem == b->mem;
+
+  if (a->kind == AST_TYPE_STRUCT && b->kind == AST_TYPE_STRUCT)
+    return a->mem == b->mem;
+
+  if (a->kind == AST_TYPE_POINTER && b->kind == AST_TYPE_POINTER)
+    return type_is_same (a->ref, b->ref);
+
+  return false;
+}
+
+static inline bool
 exp_is_integer (const ast_exp *exp)
 {
   int kind = exp->kind;
@@ -544,11 +575,23 @@ ast_exp_call_new (ast_tok name, array_t *args)
     ast_error (name.pos, "call undefined function %s",
                mstr_data (&name.string));
 
-  ast_type *type = container_of (func, ast_def_func, base)->type;
+  ast_def_func *def = container_of (func, ast_def_func, base);
+  if (args->size != def->parms)
+    ast_error (name.pos, "the number of parms and args is different");
+
+  for (size_t i = args->size; i; i--)
+    {
+      ast_exp *arg = *(ast_exp **)array_at (args, i - 1);
+      ast_def *parm_base = *(ast_def **)array_at (&def->env->defs, i - 1);
+      ast_def_var *parm = container_of (parm_base, ast_def_var, base);
+
+      if (!type_is_same (arg->type, parm->type))
+        ast_error (arg->pos, "types of parameter and argument is distinct");
+    }
 
   base->kind = AST_EXP_CALL;
+  base->type = def->type;
   base->pos = name.pos;
-  base->type = type;
 
   exp->func = func;
   exp->args = args;
@@ -559,11 +602,33 @@ ast_exp_call_new (ast_tok name, array_t *args)
 array_t *
 ast_call_args_new (array_t *args, ast_exp *arg)
 {
+  if (!args)
+    {
+      args = mem_malloc (sizeof (array_t));
+      *args = (array_t){ .elem_size = sizeof (ast_exp *) };
+    }
+
+  array_expand (args);
+
+  ast_exp **inpos = array_push_back (args);
+  *inpos = arg;
+
+  return args;
 }
 
 ast_exp *
-ast_exp_binary_new (int kind, ast_exp *, ast_exp *exp2)
+ast_exp_binary_new (int kind, ast_exp *exp1, ast_exp *exp2)
 {
+  ast_exp_binary *exp = mem_malloc (sizeof (ast_exp_binary));
+  ast_exp *base = &exp->base;
+
+  base->pos = exp1->pos;
+  base->kind = kind;
+
+  exp->exp1 = exp1;
+  exp->exp2 = exp2;
+
+  return base;
 }
 
 static inline void

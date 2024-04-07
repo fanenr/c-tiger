@@ -7,7 +7,7 @@
 extern void ast_prog_init (void);
 
 /* syntax error */
-extern void parser_other (const char *text);
+extern void parser_other (const char *msg);
 
 /* set pos from tok */
 #define POS(tok) set_parse_pos (tok)

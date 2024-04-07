@@ -192,9 +192,9 @@ exp_call
 
 call_args
     : exp
-      { $$ = ast_call_args_new ($1); }
+      { $$ = ast_call_args_new (0, $1);  }
     | call_args COMMA exp
-      { $$ = ast_call_args_new ($3); }
+      { $$ = ast_call_args_new ($1, $3); }
     ;
 
 exp_paren
