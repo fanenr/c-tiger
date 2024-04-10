@@ -224,9 +224,9 @@ exp_unary_math
     ;
 
 exp_binary
-    : exp_binary_bit
+    : exp_binary_mem
       { $$ = $1; }
-    | exp_binary_mem
+    | exp_binary_bit
       { $$ = $1; }
     | exp_binary_math
       { $$ = $1; }
@@ -235,12 +235,12 @@ exp_binary
     ;
 
 exp_binary_mem
-    : exp DOT exp
-      { $$ = BIN_NEW (DMEM, $1, $3);  }
-    | exp PMEM exp
-      { $$ = BIN_NEW (PMEM, $1, $3);  }
+    : exp DOT ID
+      { $$ = ast_exp_mem_new ($1, $3);  }
+    | exp PMEM ID
+      { $$ = ast_exp_pmem_new ($1, $3); }
     | exp LBRACK exp RBRACK
-      { $$ = BIN_NEW (INDEX, $1, $3); }
+      { $$ = BIN_NEW (INDEX, $1, $3);   }
     ;
 
 exp_binary_bit

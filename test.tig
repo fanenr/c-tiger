@@ -1,4 +1,4 @@
-# comment
+// comment
 type i32 = int32;
 
 union u
