@@ -71,6 +71,10 @@ extern ast_exp *ast_exp_call_new (ast_tok name, array_t *args);
 
 extern array_t *ast_call_args_new (array_t *args, ast_exp *arg);
 
+extern ast_exp *ast_exp_dmem_new (ast_exp *obj, ast_tok name);
+
+extern ast_exp *ast_exp_pmem_new (ast_exp *obj, ast_tok name);
+
 #define BIN_NEW(kind, exp1, exp2)                                             \
   ast_exp_binary_new (AST_EXP_BIN_##kind, exp1, exp2)
 

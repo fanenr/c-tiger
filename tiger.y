@@ -236,7 +236,7 @@ exp_binary
 
 exp_binary_mem
     : exp DOT ID
-      { $$ = ast_exp_mem_new ($1, $3);  }
+      { $$ = ast_exp_dmem_new ($1, $3); }
     | exp PMEM ID
       { $$ = ast_exp_pmem_new ($1, $3); }
     | exp LBRACK exp RBRACK

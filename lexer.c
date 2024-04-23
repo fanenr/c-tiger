@@ -46,7 +46,7 @@ lexer_ret (int kind)
     case ID:
     case STR:
       {
-        mstr_init (str);
+        *str = MSTR_INIT;
         mstr_assign_cstr (str, yytext);
       }
       break;

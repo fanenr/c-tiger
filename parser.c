@@ -86,7 +86,7 @@ ast_prog_init (void)
       base->kind = AST_DEF_TYPE;
       base->pos = m_pos;
 
-      mstr_init (name);
+      *name = MSTR_INIT;
       mstr_assign_cstr (name, base_type_name[i]);
 
       def->type = &base_type[i];
@@ -157,6 +157,19 @@ env_find_def (ast_env *env, const mstr_t *name)
           if (mstr_cmp_mstr (name, &base->name) == 0)
             return base;
         }
+    }
+  return NULL;
+}
+
+static inline ast_def *
+env_find_def2 (ast_env *env, const mstr_t *name)
+{
+  array_t *defs = &env->defs;
+  for (size_t i = defs->size; i; i--)
+    {
+      ast_def *base = *(ast_def **)array_at (defs, i - 1);
+      if (mstr_cmp_mstr (name, &base->name) == 0)
+        return base;
     }
   return NULL;
 }
@@ -248,6 +261,7 @@ ast_def_union_new (ast_tok name, ast_env *env)
           ast_error (base->pos, "function can not be here");
 
         case AST_DEF_TYPE:
+          ast_error (base->pos, "type can not be here");
           break;
 
         case AST_DEF_VAR:
@@ -300,6 +314,7 @@ ast_def_struct_new (ast_tok name, ast_env *env)
           ast_error (base->pos, "function can not be here");
 
         case AST_DEF_TYPE:
+          ast_error (base->pos, "type can not be here");
           break;
 
         case AST_DEF_VAR:
@@ -395,6 +410,13 @@ type_is_same (ast_type *a, ast_type *b)
     return type_is_same (a->ref, b->ref);
 
   return false;
+}
+
+static inline bool
+exp_is_unstr (const ast_exp *exp)
+{
+  int kind = exp->kind;
+  return kind == AST_TYPE_UNION || kind == AST_TYPE_STRUCT;
 }
 
 static inline bool
@@ -614,6 +636,31 @@ ast_call_args_new (array_t *args, ast_exp *arg)
   *inpos = arg;
 
   return args;
+}
+
+ast_exp *
+ast_exp_dmem_new (ast_exp *obj, ast_tok name)
+{
+  ast_exp_binary *exp = mem_malloc (sizeof (ast_exp_binary));
+  ast_exp *base = &exp->base;
+
+  base->kind = AST_EXP_BIN_DMEM;
+  base->pos = obj->pos;
+
+  if (!exp_is_unstr (obj))
+    ast_error (obj->pos, "mem operator can only be used for union/struct");
+
+  ast_def *mbase = env_find_def2 (obj->type->mem, &name.string);
+  ast_def_var *mdef = container_of (mbase, ast_def_var, base);
+
+  if (!mbase || mbase->kind != AST_DEF_VAR)
+    ast_error (name.pos, "there is no member %s", mstr_data (&name.string));
+
+  base->type = mdef->type;
+
+  /* TODO */
+
+  return base;
 }
 
 ast_exp *

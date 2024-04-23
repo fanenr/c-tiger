@@ -4,11 +4,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define MSTR_EXPAN_RATIO 2
-#define MSTR_SSO_CAP (sizeof (mstr_heap_t) - 1)
-
 #define MSTR_FLG_SSO 1
 #define MSTR_FLG_HEAP 0
+
+#define MSTR_EXPAN_RATIO 2
+#define MSTR_SSO_CAP (sizeof (mstr_heap_t) - 1)
 
 typedef union mstr_t mstr_t;
 typedef unsigned char mstr_byte_t;
@@ -35,18 +35,21 @@ union mstr_t
   mstr_heap_t heap;
 };
 
-extern void mstr_init (mstr_t *str) __attribute__ ((nonnull (1)));
+#define MSTR_INIT                                                             \
+  (mstr_t) (mstr_sso_t) { .flg = MSTR_FLG_SSO }
 
-extern void mstr_free (mstr_t *str) __attribute__ ((nonnull (1)));
+#define mstr_is_sso(PTR) ((PTR)->sso.flg == MSTR_FLG_SSO)
+#define mstr_is_heap(PTR) ((PTR)->sso.flg == MSTR_FLG_HEAP)
 
-extern size_t mstr_cap (const mstr_t *str) __attribute__ ((nonnull (1)));
-
-extern size_t mstr_len (const mstr_t *str) __attribute__ ((nonnull (1)));
-
-extern const char *mstr_data (const mstr_t *str) __attribute__ ((nonnull (1)));
+#define mstr_cap(PTR) (mstr_is_heap (PTR) ? (PTR)->heap.cap : MSTR_SSO_CAP)
+#define mstr_len(PTR) (mstr_is_heap (PTR) ? (PTR)->heap.len : (PTR)->sso.len)
+#define mstr_data(PTR)                                                        \
+  (mstr_is_heap (PTR) ? (PTR)->heap.data : (PTR)->sso.data)
 
 extern int mstr_at (const mstr_t *str, size_t pos)
     __attribute__ ((nonnull (1)));
+
+extern void mstr_free (mstr_t *str) __attribute__ ((nonnull (1)));
 
 extern char *mstr_release (mstr_t *str) __attribute__ ((nonnull (1)));
 
