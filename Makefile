@@ -1,18 +1,9 @@
-CSTD   = -std=gnu11
-CXXSTD = -std=c++17
-WARN   = -Wall -Wextra -Werror
-NOWARN = -Wno-unused-variable -Wno-unused-function
+MODE = debug
 
-OPT_LEVEL    = -Og
-DBG_LDFLAGS  = -g
-DBG_CFLAGS   = -ggdb3
+include config.mk
+export CFLAGS LDFLAGS
 
-CFLAGS   = $(WARN) $(NOWARN) $(OPT_LEVEL) $(DBG_CFLAGS) $(LTO_CFLAGS) \
-          $(CSTD) $(ASAN_CFLAGS)
-LDFLAGS  = $(DBG_LDFLAGS) $(LTO_LDFLAGS) $(ASAN_LDFLAGS)
-
-src := driver.c parser.c lexer.c \
-       mstr.c array.c rbtree.c \
+src := driver.c parser.c lexer.c mstr.c array.c rbtree.c \
        tiger.l.c tiger.y.c
 obj := $(src:%.c=%.o)
 
@@ -39,4 +30,4 @@ json: clean
 
 .PHONY: clean
 clean:
-	rm -f *.o *.l.c *.y.h *.y.c *.y.output tiger
+	-rm -f *.o *.l.c *.y.h *.y.c *.y.output tiger

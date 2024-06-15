@@ -1,14 +1,16 @@
-.cache/
-
-test
-lexer
-parser
-tiger
-
+# object file
 *.o
 *.l.c
 *.y.h
 *.y.c
 
+# exe file
+tiger
+
+# other
 *.y.output
 compile_commands.json
+
+# directory
+!/**/
+/.cache/
