@@ -3,9 +3,8 @@
 #include "common.h"
 #include "mstr.h"
 #include "parser.h"
-
 #include "tiger.y.h"
-#include "util.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 

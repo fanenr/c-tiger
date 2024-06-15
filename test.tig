@@ -1,33 +1,26 @@
 // comment
 type i32 = int32;
+type i64 = int64;
 
 union u
 {
-  type u_i32 = i32;
-  
-  var m32: u_i32;
-  var m64: *u_i32;
-  
-  struct us
-  {
-    type us_i32 = u_i32;
-    var m32: us_i32;
-  }
+  var m32: i32;
+  var m64: i64;
 }
 
 struct s
 {
   var m32: i32;
-  var m64: **int64;
+  var m64: i64;
 }
 
-func main(parm1: int8, parm2: i32) int32
+func main(parm1: int8, parm2: int32) int32
 {
   type i64 = int64;
   var i1: i32;
   var i2: i64;
   var i3: i32;
-  
+
   i1 = 1;
   i2 = i1 | 1 ^ i3;
 
@@ -37,7 +30,7 @@ func main(parm1: int8, parm2: i32) int32
 
   var v7: u;
   var v8: s;
-  
+
   i1 = v7.m32;
   i2 = v8.m32;
 

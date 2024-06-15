@@ -275,20 +275,4 @@ extern ast_env prog;
 extern ast_type base_type[];
 extern const char *base_type_name[];
 
-/* **************************************************************** */
-/*                               util                               */
-/* **************************************************************** */
-
-#include <stdio.h>
-
-#define ast_error(POS, FMT, ...)                                              \
-  do                                                                          \
-    {                                                                         \
-      fprintf (stderr, "error occured at %d:%d: ", (POS).ln, (POS).ch);       \
-      fprintf (stderr, FMT, ##__VA_ARGS__);                                   \
-      fprintf (stderr, "\n");                                                 \
-      __builtin_trap ();                                                      \
-    }                                                                         \
-  while (0)
-
 #endif

@@ -1,13 +1,13 @@
 #include "parser.h"
 #include "array.h"
-#include "array_ext.h"
 #include "ast.h"
 #include "common.h"
 #include "mstr.h"
-
 #include "tiger.y.h"
+
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define ARRAY_INIT_CAP 8
@@ -73,8 +73,8 @@ parser_other (const char *msg)
 void
 ast_prog_init (void)
 {
-  prog.defs.elem_size = sizeof (ast_def *);
-  prog.stms.elem_size = sizeof (ast_stm *);
+  prog.defs.element = sizeof (ast_def *);
+  prog.stms.element = sizeof (ast_stm *);
   m_env = &prog;
 
   for (int i = AST_TYPE_BASE_ST + 1; i < AST_TYPE_BASE_ED; i++)
@@ -100,8 +100,8 @@ ast_env_new (void)
 {
   ast_env *env = mem_malloc (sizeof (ast_env));
 
-  env->defs = (array_t){ .elem_size = sizeof (ast_def *) };
-  env->stms = (array_t){ .elem_size = sizeof (ast_stm *) };
+  env->defs = (array_t){ .element = sizeof (ast_def *) };
+  env->stms = (array_t){ .element = sizeof (ast_stm *) };
   env->outer = m_env;
 
   return (m_env = env);
@@ -388,14 +388,31 @@ ast_stm_assign_new (ast_exp *obj, ast_exp *val)
 }
 
 static inline bool
-type_is_base (ast_type *type)
+type_is_base (const ast_type *type)
 {
-  int kind = type->kind;
-  return AST_TYPE_BASE_ST < kind && kind < AST_TYPE_BASE_ED;
+  return AST_TYPE_BASE_ST < type->kind && type->kind < AST_TYPE_BASE_ED;
 }
 
 static inline bool
-type_is_same (ast_type *a, ast_type *b)
+type_is_number (const ast_type *type)
+{
+  return AST_TYPE_INT8 <= type->kind && type->kind <= AST_TYPE_DOUBLE;
+}
+
+static inline bool
+type_is_integer (const ast_type *type)
+{
+  return AST_TYPE_INT8 <= type->kind && type->kind <= AST_TYPE_UINT64;
+}
+
+static inline bool
+type_is_compound (const ast_type *type)
+{
+  return type->kind == AST_TYPE_UNION || type->kind == AST_TYPE_STRUCT;
+}
+
+static inline bool
+type_is_same (const ast_type *a, const ast_type *b)
 {
   if (type_is_base (a) && type_is_base (b))
     return a->kind == b->kind;
@@ -412,27 +429,6 @@ type_is_same (ast_type *a, ast_type *b)
   return false;
 }
 
-static inline bool
-exp_is_unstr (const ast_exp *exp)
-{
-  int kind = exp->kind;
-  return kind == AST_TYPE_UNION || kind == AST_TYPE_STRUCT;
-}
-
-static inline bool
-exp_is_integer (const ast_exp *exp)
-{
-  int kind = exp->kind;
-  return AST_TYPE_INT8 <= kind && kind <= AST_TYPE_UINT64;
-}
-
-static inline bool
-exp_is_number (const ast_exp *exp)
-{
-  int kind = exp->kind;
-  return AST_TYPE_INT8 <= kind && kind <= AST_TYPE_DOUBLE;
-}
-
 void
 ast_stm_while_new (ast_exp *cond, ast_env *env)
 {
@@ -444,7 +440,7 @@ ast_stm_while_new (ast_exp *cond, ast_env *env)
   stm->cond = cond;
   stm->env = env;
 
-  if (!exp_is_integer (cond))
+  if (!type_is_integer (cond->type))
     ast_error (cond->pos, "while statement need a integer condition");
 
   menv_push_stm (base);
@@ -462,7 +458,7 @@ ast_stm_if_new (ast_exp *cond, ast_env *then_env, ast_env *else_env)
   stm->else_env = else_env;
   stm->cond = cond;
 
-  if (!exp_is_integer (cond))
+  if (!type_is_integer (cond->type))
     ast_error (cond->pos, "if statement need a integer condition");
 
   menv_push_stm (base);
@@ -519,12 +515,12 @@ ast_exp_unary_new (int kind, ast_exp *base)
   switch (kind)
     {
     case AST_EXP_UN_UPLUS:
-      if (!exp_is_number (base))
+      if (!type_is_number (base->type))
         ast_error (m_pos, "unary plus can only be used for number");
       return base;
 
     case AST_EXP_UN_UMINUS:
-      if (!exp_is_number (base))
+      if (!type_is_number (base->type))
         ast_error (m_pos, "unary minus can only be used for number");
       {
         ast_exp_elem *zero = mem_malloc (sizeof (ast_exp_elem));
@@ -627,7 +623,7 @@ ast_call_args_new (array_t *args, ast_exp *arg)
   if (!args)
     {
       args = mem_malloc (sizeof (array_t));
-      *args = (array_t){ .elem_size = sizeof (ast_exp *) };
+      *args = (array_t){ .element = sizeof (ast_exp *) };
     }
 
   array_expand (args);
@@ -647,10 +643,36 @@ ast_exp_dmem_new (ast_exp *obj, ast_tok name)
   base->kind = AST_EXP_BIN_DMEM;
   base->pos = obj->pos;
 
-  if (!exp_is_unstr (obj))
+  if (!type_is_compound (obj->type))
     ast_error (obj->pos, "mem operator can only be used for union/struct");
 
   ast_def *mbase = env_find_def2 (obj->type->mem, &name.string);
+  ast_def_var *mdef = container_of (mbase, ast_def_var, base);
+
+  if (!mbase || mbase->kind != AST_DEF_VAR)
+    ast_error (name.pos, "there is no member %s", mstr_data (&name.string));
+
+  base->type = mdef->type;
+
+  /* TODO */
+
+  return base;
+}
+
+ast_exp *
+ast_exp_pmem_new (ast_exp *obj, ast_tok name)
+{
+  ast_exp_binary *exp = mem_malloc (sizeof (ast_exp_binary));
+  ast_exp *base = &exp->base;
+
+  ast_type *ref = obj->type->ref;
+  base->kind = AST_EXP_BIN_PMEM;
+  base->pos = obj->pos;
+
+  if (obj->kind != AST_TYPE_POINTER || !type_is_compound (ref))
+    ast_error (obj->pos, "mem operator can only be used for union/struct");
+
+  ast_def *mbase = env_find_def2 (ref->mem, &name.string);
   ast_def_var *mdef = container_of (mbase, ast_def_var, base);
 
   if (!mbase || mbase->kind != AST_DEF_VAR)
@@ -685,15 +707,14 @@ array_expand (array_t *arr)
     return;
 
   size_t newcap = arr->cap * ARRAY_EXPAN_RATIO ?: ARRAY_INIT_CAP;
-  void *newdata = mem_realloc (arr->data, newcap * arr->elem_size);
+  void *newdata = mem_realloc (arr->data, newcap * arr->element);
 
   arr->data = newdata;
   arr->cap = newcap;
 }
 
 int
-defs_name_comp (const void *a /* const ast_def ** */,
-                const void *b /* const ast_def ** */)
+defs_name_comp (const void *a, const void *b)
 {
   const ast_def *da = *(const ast_def **)a;
   const ast_def *db = *(const ast_def **)b;

@@ -24,7 +24,7 @@ return                { ADJ (); RET (RETURN ); }
 {str}                 { ADJ (); RET (STR    ); }
 {int}                 { ADJ (); RET (INT    ); }
 {real}                { ADJ (); RET (REAL   ); }
-                                                
+
 "="                   { ADJ (); RET (EQ     ); }
 "+"                   { ADJ (); RET (PLUS   ); }
 "-"                   { ADJ (); RET (MINUS  ); }
@@ -54,7 +54,7 @@ return                { ADJ (); RET (RETURN ); }
 ">="                  { ADJ (); RET (GTEQ   ); }
 "&&"                  { ADJ (); RET (LAND   ); }
 "||"                  { ADJ (); RET (LOR    ); }
-                                                
+
 [ \t]+                { ADJ ();                }
 "//".*                { ADJ ();                }
 \n                    { NLN ();                }

@@ -1,17 +1,25 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <stdio.h>
-
 /* **************************************************************** */
 /*                              error                               */
 /* **************************************************************** */
 
-#define error(FMT, ...)                                                       \
+#define error(fmt, ...)                                                       \
   do                                                                          \
     {                                                                         \
       fprintf (stderr, "%s:%d (%s): ", __FUNCTION__, __LINE__, __FILE__);     \
-      fprintf (stderr, FMT, ##__VA_ARGS__);                                   \
+      fprintf (stderr, fmt, ##__VA_ARGS__);                                   \
+      fprintf (stderr, "\n");                                                 \
+      __builtin_trap ();                                                      \
+    }                                                                         \
+  while (0)
+
+#define ast_error(pos, fmt, ...)                                              \
+  do                                                                          \
+    {                                                                         \
+      fprintf (stderr, "error occured at %d:%d: ", (pos).ln, (pos).ch);       \
+      fprintf (stderr, fmt, ##__VA_ARGS__);                                   \
       fprintf (stderr, "\n");                                                 \
       __builtin_trap ();                                                      \
     }                                                                         \
