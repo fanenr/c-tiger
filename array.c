@@ -2,7 +2,7 @@
 
 #define likely(exp) __builtin_expect (!!(exp), 1)
 #define unlikely(exp) __builtin_expect (!!(exp), 0)
-#define memmove(dest, src, n) __builtin_memmove ((dest), (src), (n))
+#define memmove(dst, src, n) __builtin_memmove ((dst), (src), (n))
 
 void *
 array_insert (array_t *arr, size_t pos)
@@ -16,15 +16,15 @@ array_insert (array_t *arr, size_t pos)
     return NULL;
 
   size_t element = arr->element;
-  void *in = arr->data + pos * element;
-  size_t len = (size - pos) * element;
-  void *next = in + element;
+  void *src = arr->data + pos * element;
+  size_t n = (size - pos) * element;
+  void *dest = src + element;
 
-  if (memmove (next, in, len) != next)
+  if (memmove (dest, src, n) != dest)
     return NULL;
 
   arr->size++;
-  return in;
+  return src;
 }
 
 void *
