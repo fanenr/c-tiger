@@ -55,7 +55,7 @@ extern void ast_stm_assign_new (ast_exp *obj, ast_exp *exp);
 extern void ast_stm_while_new (ast_exp *cond, ast_env *env);
 
 extern void ast_stm_if_new (ast_exp *cond, ast_env *then_env,
-                            ast_env *else_env);
+			    ast_env *else_env);
 
 /* **************************************************************** */
 /*                             exp new                              */

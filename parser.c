@@ -44,13 +44,13 @@ ast_type base_type_string = {
 const char *base_type_name[] = {
   [AST_TYPE_VOID] = "void",
 
-  [AST_TYPE_INT8] = "int8",     [AST_TYPE_INT16] = "int16",
-  [AST_TYPE_INT32] = "int32",   [AST_TYPE_INT64] = "int64",
+  [AST_TYPE_INT8] = "int8",	[AST_TYPE_INT16] = "int16",
+  [AST_TYPE_INT32] = "int32",	[AST_TYPE_INT64] = "int64",
 
-  [AST_TYPE_UINT8] = "uint8",   [AST_TYPE_UINT16] = "uint16",
+  [AST_TYPE_UINT8] = "uint8",	[AST_TYPE_UINT16] = "uint16",
   [AST_TYPE_UINT32] = "uint32", [AST_TYPE_UINT64] = "uint64",
 
-  [AST_TYPE_FLOAT] = "float",   [AST_TYPE_DOUBLE] = "double",
+  [AST_TYPE_FLOAT] = "float",	[AST_TYPE_DOUBLE] = "double",
 };
 
 static void array_expand (array_t *arr);
@@ -100,8 +100,8 @@ ast_env_new (void)
 {
   ast_env *env = mem_malloc (sizeof (ast_env));
 
-  env->defs = (array_t){ .element = sizeof (ast_def *) };
-  env->stms = (array_t){ .element = sizeof (ast_stm *) };
+  env->defs = (array_t) { .element = sizeof (ast_def *) };
+  env->stms = (array_t) { .element = sizeof (ast_stm *) };
   env->outer = m_env;
 
   return (m_env = env);
@@ -138,7 +138,7 @@ menv_push_def (ast_def *base)
     {
       ast_pos pos = (*defined)->pos;
       ast_error (base->pos, "%s has been defined here %d:%d",
-                 mstr_data (&base->name), pos.ln, pos.ch);
+		 mstr_data (&base->name), pos.ln, pos.ch);
     }
 
   ast_def **inpos = array_push_back (defs);
@@ -152,11 +152,11 @@ env_find_def (ast_env *env, const mstr_t *name)
     {
       array_t *defs = &env->defs;
       for (size_t i = defs->size; i; i--)
-        {
-          ast_def *base = *(ast_def **)array_at (defs, i - 1);
-          if (mstr_cmp_mstr (name, &base->name) == 0)
-            return base;
-        }
+	{
+	  ast_def *base = *(ast_def **) array_at (defs, i - 1);
+	  if (mstr_cmp_mstr (name, &base->name) == 0)
+	    return base;
+	}
     }
   return NULL;
 }
@@ -167,9 +167,9 @@ env_find_def2 (ast_env *env, const mstr_t *name)
   array_t *defs = &env->defs;
   for (size_t i = defs->size; i; i--)
     {
-      ast_def *base = *(ast_def **)array_at (defs, i - 1);
+      ast_def *base = *(ast_def **) array_at (defs, i - 1);
       if (mstr_cmp_mstr (name, &base->name) == 0)
-        return base;
+	return base;
     }
   return NULL;
 }
@@ -254,25 +254,25 @@ ast_def_union_new (ast_tok name, ast_env *env)
   array_t *defs = &env->defs;
   for (size_t i = defs->size; i; i--)
     {
-      ast_def *base = *(ast_def **)array_at (defs, i - 1);
+      ast_def *base = *(ast_def **) array_at (defs, i - 1);
       switch (base->kind)
-        {
-        case AST_DEF_FUNC:
-          ast_error (base->pos, "function can not be here");
+	{
+	case AST_DEF_FUNC:
+	  ast_error (base->pos, "function can not be here");
 
-        case AST_DEF_TYPE:
-          ast_error (base->pos, "type can not be here");
-          break;
+	case AST_DEF_TYPE:
+	  ast_error (base->pos, "type can not be here");
+	  break;
 
-        case AST_DEF_VAR:
-          {
-            ast_def_var *def = container_of (base, ast_def_var, base);
-            unsigned type_size = def->type->size;
-            if (type_size > union_size)
-              union_size = type_size;
-          }
-          break;
-        }
+	case AST_DEF_VAR:
+	  {
+	    ast_def_var *def = container_of (base, ast_def_var, base);
+	    unsigned type_size = def->type->size;
+	    if (type_size > union_size)
+	      union_size = type_size;
+	  }
+	  break;
+	}
     }
 
   type->size = union_size;
@@ -307,24 +307,24 @@ ast_def_struct_new (ast_tok name, ast_env *env)
   array_t *defs = &env->defs;
   for (size_t i = defs->size; i; i--)
     {
-      ast_def *base = *(ast_def **)array_at (defs, i - 1);
+      ast_def *base = *(ast_def **) array_at (defs, i - 1);
       switch (base->kind)
-        {
-        case AST_DEF_FUNC:
-          ast_error (base->pos, "function can not be here");
+	{
+	case AST_DEF_FUNC:
+	  ast_error (base->pos, "function can not be here");
 
-        case AST_DEF_TYPE:
-          ast_error (base->pos, "type can not be here");
-          break;
+	case AST_DEF_TYPE:
+	  ast_error (base->pos, "type can not be here");
+	  break;
 
-        case AST_DEF_VAR:
-          {
-            ast_def_var *def = container_of (base, ast_def_var, base);
-            unsigned type_size = def->type->size;
-            struct_size += type_size;
-          }
-          break;
-        }
+	case AST_DEF_VAR:
+	  {
+	    ast_def_var *def = container_of (base, ast_def_var, base);
+	    unsigned type_size = def->type->size;
+	    struct_size += type_size;
+	  }
+	  break;
+	}
     }
 
   type->size = struct_size;
@@ -475,15 +475,15 @@ ast_exp_elem_new (ast_tok tok)
     {
     case ID:
       {
-        ast_def *find_base = env_find_def (m_env, &tok.string);
-        if (!find_base || find_base->kind != AST_DEF_VAR)
-          ast_error (tok.pos, "use undefined variable %s",
-                     mstr_data (&tok.string));
+	ast_def *find_base = env_find_def (m_env, &tok.string);
+	if (!find_base || find_base->kind != AST_DEF_VAR)
+	  ast_error (tok.pos, "use undefined variable %s",
+		     mstr_data (&tok.string));
 
-        ast_type *type = container_of (find_base, ast_def_var, base)->type;
-        base->kind = AST_EXP_ELEM_VAR;
-        exp->reference = find_base;
-        base->type = type;
+	ast_type *type = container_of (find_base, ast_def_var, base)->type;
+	base->kind = AST_EXP_ELEM_VAR;
+	exp->reference = find_base;
+	base->type = type;
       }
       break;
 
@@ -516,66 +516,66 @@ ast_exp_unary_new (int kind, ast_exp *base)
     {
     case AST_EXP_UN_UPLUS:
       if (!type_is_number (base->type))
-        ast_error (m_pos, "unary plus can only be used for number");
+	ast_error (m_pos, "unary plus can only be used for number");
       return base;
 
     case AST_EXP_UN_UMINUS:
       if (!type_is_number (base->type))
-        ast_error (m_pos, "unary minus can only be used for number");
+	ast_error (m_pos, "unary minus can only be used for number");
       {
-        ast_exp_elem *zero = mem_malloc (sizeof (ast_exp_elem));
-        ast_exp *zero_base = &zero->base;
+	ast_exp_elem *zero = mem_malloc (sizeof (ast_exp_elem));
+	ast_exp *zero_base = &zero->base;
 
-        zero_base->type = &base_type[AST_TYPE_INT32];
-        zero_base->kind = AST_EXP_ELEM_INT;
-        zero_base->pos = m_pos;
-        zero->integer = 0;
+	zero_base->type = &base_type[AST_TYPE_INT32];
+	zero_base->kind = AST_EXP_ELEM_INT;
+	zero_base->pos = m_pos;
+	zero->integer = 0;
 
-        ast_exp_binary *ret = mem_malloc (sizeof (ast_exp_binary));
-        ast_exp *ret_base = &ret->base;
+	ast_exp_binary *ret = mem_malloc (sizeof (ast_exp_binary));
+	ast_exp *ret_base = &ret->base;
 
-        ret_base->kind = AST_EXP_BIN_MINUS;
-        ret_base->type = base->type;
-        ret_base->pos = m_pos;
-        ret->exp1 = zero_base;
-        ret->exp2 = base;
+	ret_base->kind = AST_EXP_BIN_MINUS;
+	ret_base->type = base->type;
+	ret_base->pos = m_pos;
+	ret->exp1 = zero_base;
+	ret->exp2 = base;
 
-        return ret_base;
+	return ret_base;
       }
 
     case AST_EXP_UN_ADDR:
       if (base->kind != AST_EXP_ELEM_VAR)
-        ast_error (m_pos, "address operator can only be used for variable");
+	ast_error (m_pos, "address operator can only be used for variable");
       {
-        ast_exp_unary *ret = mem_malloc (sizeof (ast_exp_unary));
-        ast_type *type = mem_malloc (sizeof (ast_type));
-        ast_exp *ret_base = &ret->base;
+	ast_exp_unary *ret = mem_malloc (sizeof (ast_exp_unary));
+	ast_type *type = mem_malloc (sizeof (ast_type));
+	ast_exp *ret_base = &ret->base;
 
-        type->kind = AST_TYPE_POINTER;
-        type->size = sizeof (void *);
-        type->pos = m_pos;
+	type->kind = AST_TYPE_POINTER;
+	type->size = sizeof (void *);
+	type->pos = m_pos;
 
-        ret_base->kind = AST_EXP_UN_ADDR;
-        ret_base->type = type;
-        ret_base->pos = m_pos;
-        ret->exp = base;
+	ret_base->kind = AST_EXP_UN_ADDR;
+	ret_base->type = type;
+	ret_base->pos = m_pos;
+	ret->exp = base;
 
-        return ret_base;
+	return ret_base;
       }
 
     case AST_EXP_UN_DREF:
       if (base->type->kind != AST_TYPE_POINTER)
-        ast_error (m_pos, "dereference operator can only be used for pointer");
+	ast_error (m_pos, "dereference operator can only be used for pointer");
       {
-        ast_exp_unary *ret = mem_malloc (sizeof (ast_exp_unary));
-        ast_exp *ret_base = &ret->base;
+	ast_exp_unary *ret = mem_malloc (sizeof (ast_exp_unary));
+	ast_exp *ret_base = &ret->base;
 
-        ret_base->kind = AST_EXP_UN_ADDR;
-        ret_base->type = base->type->ref;
-        ret_base->pos = m_pos;
-        ret->exp = base;
+	ret_base->kind = AST_EXP_UN_ADDR;
+	ret_base->type = base->type->ref;
+	ret_base->pos = m_pos;
+	ret->exp = base;
 
-        return ret_base;
+	return ret_base;
       }
     }
 
@@ -591,7 +591,7 @@ ast_exp_call_new (ast_tok name, array_t *args)
   ast_def *func = env_find_def (m_env, &name.string);
   if (!func || func->kind != AST_DEF_FUNC)
     ast_error (name.pos, "call undefined function %s",
-               mstr_data (&name.string));
+	       mstr_data (&name.string));
 
   ast_def_func *def = container_of (func, ast_def_func, base);
   if (args->size != def->parms)
@@ -599,12 +599,12 @@ ast_exp_call_new (ast_tok name, array_t *args)
 
   for (size_t i = args->size; i; i--)
     {
-      ast_exp *arg = *(ast_exp **)array_at (args, i - 1);
-      ast_def *parm_base = *(ast_def **)array_at (&def->env->defs, i - 1);
+      ast_exp *arg = *(ast_exp **) array_at (args, i - 1);
+      ast_def *parm_base = *(ast_def **) array_at (&def->env->defs, i - 1);
       ast_def_var *parm = container_of (parm_base, ast_def_var, base);
 
       if (!type_is_same (arg->type, parm->type))
-        ast_error (arg->pos, "types of parameter and argument is distinct");
+	ast_error (arg->pos, "types of parameter and argument is distinct");
     }
 
   base->kind = AST_EXP_CALL;
@@ -623,7 +623,7 @@ ast_call_args_new (array_t *args, ast_exp *arg)
   if (!args)
     {
       args = mem_malloc (sizeof (array_t));
-      *args = (array_t){ .element = sizeof (ast_exp *) };
+      *args = (array_t) { .element = sizeof (ast_exp *) };
     }
 
   array_expand (args);
@@ -716,7 +716,7 @@ array_expand (array_t *arr)
 int
 defs_name_comp (const void *a, const void *b)
 {
-  const ast_def *da = *(const ast_def **)a;
-  const ast_def *db = *(const ast_def **)b;
+  const ast_def *da = *(const ast_def **) a;
+  const ast_def *db = *(const ast_def **) b;
   return mstr_cmp_mstr (&da->name, &db->name);
 }

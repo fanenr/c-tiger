@@ -43,7 +43,7 @@ union mstr_t
 #define MSTR_VIEW(src, size)                                                  \
   (mstr_t)                                                                    \
   {                                                                           \
-    .heap = {.data = (char *)(src), .len = (size) }                           \
+    .heap = {.data = (char *) (src), .len = (size) }                          \
   }
 
 #define mstr_is_sso(str) ((str)->sso.flg == MSTR_FLG_SSO)
@@ -69,7 +69,7 @@ extern mstr_t *mstr_remove (mstr_t *str, size_t start, size_t n)
 /* substr */
 
 extern mstr_t *mstr_substr (mstr_t *save, const mstr_t *from, size_t start,
-                            size_t n) attr_nonnull (1, 2);
+			    size_t n) attr_nonnull (1, 2);
 
 /* format */
 
@@ -167,7 +167,7 @@ extern mstr_t *mstr_insert_mstr (mstr_t *str, size_t pos, const mstr_t *other)
     attr_nonnull (1, 3);
 
 extern mstr_t *mstr_insert_byte (mstr_t *str, size_t pos, const void *src,
-                                 size_t n) attr_nonnull (1, 3);
+				 size_t n) attr_nonnull (1, 3);
 
 /* assign */
 

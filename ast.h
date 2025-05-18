@@ -135,8 +135,8 @@ struct ast_tok
 
 struct ast_env
 {
-  array_t stms;   /* stms */
-  array_t defs;   /* defs */
+  array_t stms;	  /* stms */
+  array_t defs;	  /* defs */
   ast_env *outer; /* outer env */
 };
 
@@ -146,8 +146,8 @@ struct ast_env
 
 struct ast_type
 {
-  int kind;      /* kind of type */
-  ast_pos pos;   /* pos in source code */
+  int kind;	 /* kind of type */
+  ast_pos pos;	 /* pos in source code */
   unsigned size; /* size of type */
   union
   {
@@ -182,7 +182,7 @@ struct ast_def_type
 struct ast_def_func
 {
   ast_def base;
-  ast_env *env;   /* func body */
+  ast_env *env;	  /* func body */
   ast_type *type; /* return type of func */
   unsigned parms; /* the number of func parms  */
 };
@@ -212,7 +212,7 @@ struct ast_stm_assign
 struct ast_stm_while
 {
   ast_stm base;
-  ast_env *env;  /* while body */
+  ast_env *env;	 /* while body */
   ast_exp *cond; /* while condition */
 };
 
@@ -230,8 +230,8 @@ struct ast_stm_if
 
 struct ast_exp
 {
-  int kind;       /* kind of exp */
-  ast_pos pos;    /* pos in source code */
+  int kind;	  /* kind of exp */
+  ast_pos pos;	  /* pos in source code */
   ast_type *type; /* type of exp */
 };
 
@@ -240,9 +240,9 @@ struct ast_exp_elem
   ast_exp base;
   union
   {
-    int integer;        /* integer-literal */
-    mstr_t string;      /* string-literal */
-    double realnum;     /* real-literal */
+    int integer;	/* integer-literal */
+    mstr_t string;	/* string-literal */
+    double realnum;	/* real-literal */
     ast_def *reference; /* variable */
   };
 };

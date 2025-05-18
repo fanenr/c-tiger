@@ -9,13 +9,13 @@
   do                                                                          \
     if (mstr_is_sso (str))                                                    \
       {                                                                       \
-        (str)->sso.len = new;                                                 \
-        (str)->sso.data[new] = 0;                                             \
+	(str)->sso.len = new;                                                 \
+	(str)->sso.data[new] = 0;                                             \
       }                                                                       \
     else                                                                      \
       {                                                                       \
-        (str)->heap.len = new;                                                \
-        (str)->heap.data[new] = 0;                                            \
+	(str)->heap.len = new;                                                \
+	(str)->heap.data[new] = 0;                                            \
       }                                                                       \
   while (0)
 
@@ -52,20 +52,20 @@ mstr_reserve (mstr_t *str, size_t cap)
   if (mstr_is_heap (str))
     {
       if (!(newdata = realloc (str->heap.data, newcap)))
-        return NULL;
+	return NULL;
     }
   else
     {
       if (!(newdata = malloc (newcap)))
-        return NULL;
+	return NULL;
 
       /* copy to heap */
       size_t len = str->sso.len;
       if (memcpy (newdata, str->sso.data, len + 1) != newdata)
-        { /* copy failed */
-          free (newdata);
-          return NULL;
-        }
+	{ /* copy failed */
+	  free (newdata);
+	  return NULL;
+	}
 
       /* save length */
       str->heap.len = len;
@@ -138,7 +138,7 @@ mstr_format (mstr_t *str, const char *fmt, ...)
 
   if (need < 0)
     goto err;
-  if ((size_t)need < cap)
+  if ((size_t) need < cap)
     goto success;
 
   if (mstr_reserve (str, need + 1) != str)
